@@ -1131,31 +1131,135 @@
           { className: 'space-y-6 animate-fade-in text-xs' },
           React.createElement(
             'div',
-            { className: 'flex justify-between items-center' },
-            React.createElement('h1', { className: 'text-xl font-bold text-white' }, 'Employees Tab'),
-            React.createElement('button', { onClick: () => setShowAddEmp(true), className: 'px-4 py-2 rounded-xl bg-purple-600 text-white font-bold' }, '+ Add Employee')
+            { className: 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4' },
+            React.createElement(
+              'div',
+              null,
+              React.createElement('h1', { className: 'text-2xl font-extrabold text-white' }, 'Employee Directory & Access'),
+              React.createElement('p', { className: 'text-xs text-slate-400' }, `Total ${users.length} employees registered for corporate mobility`)
+            ),
+            React.createElement(
+              'button',
+              {
+                onClick: () => setShowAddEmp(true),
+                className: 'flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-lg shadow-purple-600/30 transition',
+              },
+              React.createElement(Icon, { name: 'plus', className: 'w-4 h-4' }),
+              '+ Add Employee'
+            )
           ),
           React.createElement(
             'div',
-            { className: 'rounded-3xl border border-slate-800 bg-slate-900/90 overflow-hidden' },
+            { className: 'rounded-3xl border border-slate-800 bg-slate-900/90 overflow-hidden shadow-2xl' },
+            React.createElement(
+              'div',
+              { className: 'p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/60' },
+              React.createElement('input', {
+                type: 'text',
+                placeholder: 'Filter by employee name, email, department...',
+                value: searchQuery,
+                onChange: (e) => setSearchQuery(e.target.value),
+                className: 'w-full max-w-sm bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-white',
+              }),
+              React.createElement('span', { className: 'text-slate-400 font-mono text-[11px]' }, `${users.length} Active Records`)
+            ),
             React.createElement(
               'table',
               { className: 'w-full text-left' },
-              React.createElement('thead', { className: 'bg-slate-950 text-slate-400 uppercase text-[10px]' }, React.createElement('tr', null, React.createElement('th', { className: 'p-4' }, 'Name'), React.createElement('th', { className: 'p-4' }, 'Email'), React.createElement('th', { className: 'p-4' }, 'Department'), React.createElement('th', { className: 'p-4' }, 'Manager'), React.createElement('th', { className: 'p-4' }, 'Access'))),
+              React.createElement(
+                'thead',
+                { className: 'bg-slate-950 text-slate-400 uppercase text-[10px]' },
+                React.createElement(
+                  'tr',
+                  null,
+                  React.createElement('th', { className: 'p-4' }, 'Employee'),
+                  React.createElement('th', { className: 'p-4' }, 'Contact & ID'),
+                  React.createElement('th', { className: 'p-4' }, 'Department'),
+                  React.createElement('th', { className: 'p-4' }, 'Office Base'),
+                  React.createElement('th', { className: 'p-4' }, 'Manager'),
+                  React.createElement('th', { className: 'p-4' }, 'Platform Access'),
+                  React.createElement('th', { className: 'p-4 text-right' }, 'Action')
+                )
+              ),
               React.createElement(
                 'tbody',
-                { className: 'divide-y divide-slate-800' },
-                users.map((u) =>
-                  React.createElement(
-                    'tr',
-                    { key: u.id, className: 'hover:bg-slate-800/40' },
-                    React.createElement('td', { className: 'p-4 font-bold text-white' }, u.name),
-                    React.createElement('td', { className: 'p-4 text-slate-300' }, u.email),
-                    React.createElement('td', { className: 'p-4 text-slate-300' }, u.department),
-                    React.createElement('td', { className: 'p-4 text-slate-400' }, u.manager),
-                    React.createElement('td', { className: 'p-4' }, React.createElement('span', { className: 'px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold' }, `[${u.platformAccess || 'Granted'}]`))
-                  )
-                )
+                { className: 'divide-y divide-slate-800 font-sans' },
+                users
+                  .filter((u) => {
+                    if (!searchQuery) return true;
+                    const q = searchQuery.toLowerCase();
+                    return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.department.toLowerCase().includes(q);
+                  })
+                  .map((u) => {
+                    const isGranted = (u.platformAccess || 'granted') === 'granted';
+                    return React.createElement(
+                      'tr',
+                      { key: u.id, className: 'hover:bg-slate-800/40 transition' },
+                      React.createElement(
+                        'td',
+                        { className: 'p-4' },
+                        React.createElement(
+                          'div',
+                          { className: 'flex items-center gap-3' },
+                          React.createElement('img', { src: u.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', className: 'w-8 h-8 rounded-full object-cover ring-2 ring-purple-500/40' }),
+                          React.createElement(
+                            'div',
+                            null,
+                            React.createElement('div', { className: 'font-bold text-white text-sm' }, u.name),
+                            React.createElement('span', { className: 'text-[10px] text-purple-400 uppercase font-mono' }, u.role)
+                          )
+                        )
+                      ),
+                      React.createElement(
+                        'td',
+                        { className: 'p-4' },
+                        React.createElement('div', { className: 'text-slate-300 font-mono' }, u.email),
+                        React.createElement('div', { className: 'text-[10px] text-slate-400 font-mono' }, `${u.employeeId || 'EMP-1042'} • ${u.mobile}`)
+                      ),
+                      React.createElement('td', { className: 'p-4 font-semibold text-slate-200' }, u.department),
+                      React.createElement('td', { className: 'p-4 text-slate-400' }, u.officeLocation || 'GIFT City'),
+                      React.createElement('td', { className: 'p-4 text-slate-400' }, u.manager || 'Raj Patel'),
+                      React.createElement(
+                        'td',
+                        { className: 'p-4' },
+                        React.createElement(
+                          'button',
+                          {
+                            onClick: () => {
+                              const next = isGranted ? 'revoked' : 'granted';
+                              const upd = users.map((x) => (x.id === u.id ? { ...x, platformAccess: next } : x));
+                              store.setUsers(upd);
+                              setUsers(upd);
+                              toast.show('Access Updated', `${u.name} is now ${next.toUpperCase()}.`);
+                            },
+                            className: `px-2.5 py-1 rounded-lg text-xs font-bold transition border ${
+                              isGranted
+                                ? 'bg-emerald-950/80 border-emerald-500/40 text-emerald-400 hover:bg-emerald-900/60'
+                                : 'bg-rose-950/80 border-rose-500/40 text-rose-400 hover:bg-rose-900/60'
+                            }`,
+                          },
+                          isGranted ? '✓ Granted' : '✕ Revoked'
+                        )
+                      ),
+                      React.createElement(
+                        'td',
+                        { className: 'p-4 text-right' },
+                        React.createElement(
+                          'button',
+                          {
+                            onClick: () => {
+                              const upd = users.filter((x) => x.id !== u.id);
+                              store.setUsers(upd);
+                              setUsers(upd);
+                              toast.show('Employee Deleted', `${u.name} removed from organization.`);
+                            },
+                            className: 'p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-950/40 transition',
+                          },
+                          '🗑'
+                        )
+                      )
+                    );
+                  })
               )
             )
           )
@@ -1168,31 +1272,120 @@
           { className: 'space-y-6 animate-fade-in text-xs' },
           React.createElement(
             'div',
-            { className: 'flex justify-between items-center' },
-            React.createElement('h1', { className: 'text-xl font-bold text-white' }, 'Vehicles Tab'),
-            React.createElement('button', { onClick: () => setShowAddVehicle(true), className: 'px-4 py-2 rounded-xl bg-purple-600 text-white font-bold' }, '+ Add Vehicle')
+            { className: 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4' },
+            React.createElement(
+              'div',
+              null,
+              React.createElement('h1', { className: 'text-2xl font-extrabold text-white' }, 'Fleet Vehicle Approvals'),
+              React.createElement('p', { className: 'text-xs text-slate-400' }, `Total ${vehicles.length} approved corporate vehicles in Gujarat mobility network`)
+            ),
+            React.createElement(
+              'button',
+              {
+                onClick: () => setShowAddVehicle(true),
+                className: 'flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-lg shadow-purple-600/30 transition',
+              },
+              React.createElement(Icon, { name: 'plus', className: 'w-4 h-4' }),
+              '+ Add Vehicle'
+            )
           ),
           React.createElement(
             'div',
-            { className: 'rounded-3xl border border-slate-800 bg-slate-900/90 overflow-hidden' },
+            { className: 'rounded-3xl border border-slate-800 bg-slate-900/90 overflow-hidden shadow-2xl' },
+            React.createElement(
+              'div',
+              { className: 'p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/60' },
+              React.createElement('input', {
+                type: 'text',
+                placeholder: 'Filter by model, number plate, driver...',
+                value: searchQuery,
+                onChange: (e) => setSearchQuery(e.target.value),
+                className: 'w-full max-w-sm bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-white',
+              }),
+              React.createElement('span', { className: 'text-slate-400 font-mono text-[11px]' }, `${vehicles.length} Fleet Assets`)
+            ),
             React.createElement(
               'table',
               { className: 'w-full text-left' },
-              React.createElement('thead', { className: 'bg-slate-950 text-slate-400 uppercase text-[10px]' }, React.createElement('tr', null, React.createElement('th', { className: 'p-4' }, 'Registration Number'), React.createElement('th', { className: 'p-4' }, 'Model'), React.createElement('th', { className: 'p-4' }, 'Seating Capacity'), React.createElement('th', { className: 'p-4' }, 'Driver'), React.createElement('th', { className: 'p-4' }, 'Status'))),
+              React.createElement(
+                'thead',
+                { className: 'bg-slate-950 text-slate-400 uppercase text-[10px]' },
+                React.createElement(
+                  'tr',
+                  null,
+                  React.createElement('th', { className: 'p-4' }, 'Registration No.'),
+                  React.createElement('th', { className: 'p-4' }, 'Vehicle Model'),
+                  React.createElement('th', { className: 'p-4' }, 'Capacity'),
+                  React.createElement('th', { className: 'p-4' }, 'Fuel Type'),
+                  React.createElement('th', { className: 'p-4' }, 'Driver / Owner'),
+                  React.createElement('th', { className: 'p-4' }, 'Fleet Status'),
+                  React.createElement('th', { className: 'p-4 text-right' }, 'Action')
+                )
+              ),
               React.createElement(
                 'tbody',
                 { className: 'divide-y divide-slate-800 font-mono' },
-                vehicles.map((v) =>
-                  React.createElement(
-                    'tr',
-                    { key: v.id, className: 'hover:bg-slate-800/40' },
-                    React.createElement('td', { className: 'p-4 font-bold text-cyan-400' }, v.registrationNumber),
-                    React.createElement('td', { className: 'p-4 font-sans text-white font-bold' }, v.model),
-                    React.createElement('td', { className: 'p-4 text-slate-300' }, v.seatingCapacity),
-                    React.createElement('td', { className: 'p-4 font-sans text-slate-300' }, v.driverName),
-                    React.createElement('td', { className: 'p-4' }, React.createElement('span', { className: 'px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold' }, `[${v.status === 'approved' ? 'Active' : 'Inactive'}]`))
-                  )
-                )
+                vehicles
+                  .filter((v) => {
+                    if (!searchQuery) return true;
+                    const q = searchQuery.toLowerCase();
+                    return v.registrationNumber.toLowerCase().includes(q) || v.model.toLowerCase().includes(q) || v.driverName.toLowerCase().includes(q);
+                  })
+                  .map((v) => {
+                    const isApproved = v.status === 'approved';
+                    return React.createElement(
+                      'tr',
+                      { key: v.id, className: 'hover:bg-slate-800/40 transition' },
+                      React.createElement(
+                        'td',
+                        { className: 'p-4 font-bold text-cyan-400 text-sm' },
+                        React.createElement('div', { className: 'flex items-center gap-2' }, React.createElement(Icon, { name: 'car', className: 'w-4 h-4 text-slate-500' }), v.registrationNumber)
+                      ),
+                      React.createElement('td', { className: 'p-4 font-sans text-white font-bold' }, v.model),
+                      React.createElement('td', { className: 'p-4 font-sans text-slate-300' }, `${v.seatingCapacity} Seats`),
+                      React.createElement('td', { className: 'p-4 font-sans text-slate-400' }, v.fuelType || 'Petrol'),
+                      React.createElement('td', { className: 'p-4 font-sans text-slate-300 font-semibold' }, v.driverName),
+                      React.createElement(
+                        'td',
+                        { className: 'p-4' },
+                        React.createElement(
+                          'button',
+                          {
+                            onClick: () => {
+                              const next = isApproved ? 'inactive' : 'approved';
+                              const upd = vehicles.map((x) => (x.id === v.id ? { ...x, status: next } : x));
+                              store.setVehicles(upd);
+                              setVehicles(upd);
+                              toast.show('Vehicle Status Updated', `${v.model} is now ${next.toUpperCase()}.`);
+                            },
+                            className: `px-2.5 py-1 rounded-lg text-xs font-bold transition border font-sans ${
+                              isApproved
+                                ? 'bg-emerald-950/80 border-emerald-500/40 text-emerald-400 hover:bg-emerald-900/60'
+                                : 'bg-amber-950/80 border-amber-500/40 text-amber-400 hover:bg-amber-900/60'
+                            }`,
+                          },
+                          isApproved ? '✓ Active' : '✕ Inactive'
+                        )
+                      ),
+                      React.createElement(
+                        'td',
+                        { className: 'p-4 text-right' },
+                        React.createElement(
+                          'button',
+                          {
+                            onClick: () => {
+                              const upd = vehicles.filter((x) => x.id !== v.id);
+                              store.setVehicles(upd);
+                              setVehicles(upd);
+                              toast.show('Vehicle Deleted', `${v.model} removed from fleet.`);
+                            },
+                            className: 'p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-950/40 transition',
+                          },
+                          '🗑'
+                        )
+                      )
+                    );
+                  })
               )
             )
           )
@@ -1307,6 +1500,251 @@
         isAdmin ? renderAdminSidebar() : renderSidebar(),
         React.createElement('main', { className: 'flex-1 min-w-0' }, renderPageContent())
       ),
+      // --- Add Employee Modal (Admin) ---
+      showAddEmp &&
+        React.createElement(
+          'div',
+          { className: 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-lg animate-fade-in text-xs' },
+          React.createElement(
+            'div',
+            { className: 'w-full max-w-lg rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl p-6 sm:p-8 space-y-4 max-h-[90vh] overflow-y-auto' },
+            React.createElement(
+              'div',
+              { className: 'flex justify-between items-center pb-3 border-b border-slate-800' },
+              React.createElement(
+                'div',
+                null,
+                React.createElement('h3', { className: 'text-lg font-extrabold text-white tracking-tight' }, 'Register New Employee'),
+                React.createElement('p', { className: 'text-xs text-slate-400' }, 'Add staff member to enterprise carpool directory')
+              ),
+              React.createElement('button', { onClick: () => setShowAddEmp(false), className: 'p-1 rounded-lg text-slate-400 hover:text-white font-bold' }, '✕')
+            ),
+            React.createElement(
+              'form',
+              {
+                onSubmit: (e) => {
+                  e.preventDefault();
+                  const form = e.target;
+                  const name = form.emp_name.value.trim();
+                  const email = form.emp_email.value.trim();
+                  const mobile = form.emp_mobile.value.trim();
+                  const employeeId = form.emp_id.value.trim() || `EMP-${Math.floor(1000 + Math.random() * 9000)}`;
+                  const department = form.emp_dept.value;
+                  const manager = form.emp_manager.value.trim() || 'Raj Patel';
+                  const officeLocation = form.emp_loc.value;
+                  const role = form.emp_role.value;
+                  const platformAccess = form.emp_access.value;
+
+                  if (!name || !email) {
+                    toast.show('Validation Error', 'Please enter employee name and corporate email.', 'error');
+                    return;
+                  }
+
+                  const newEmp = {
+                    id: `usr-${Date.now()}`,
+                    name,
+                    email,
+                    mobile: mobile || '+91 98765 43210',
+                    employeeId,
+                    department,
+                    manager,
+                    officeLocation,
+                    role,
+                    platformAccess,
+                    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+                    status: 'active',
+                    rating: 5.0,
+                    totalTrips: 0,
+                    walletBalance: 500,
+                  };
+
+                  const updatedUsers = [...users, newEmp];
+                  store.setUsers(updatedUsers);
+                  setUsers(updatedUsers);
+                  toast.show('Employee Registered!', `${name} has been added with ${platformAccess.toUpperCase()} access.`);
+                  setShowAddEmp(false);
+                },
+                className: 'space-y-3.5',
+              },
+              React.createElement(
+                'div',
+                { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3' },
+                React.createElement('div', null, React.createElement('label', { className: 'block text-slate-300 font-semibold mb-1' }, 'Full Name *'), React.createElement('input', { name: 'emp_name', required: true, placeholder: 'e.g. Ananya Sharma', className: 'w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-medium' })),
+                React.createElement('div', null, React.createElement('label', { className: 'block text-slate-300 font-semibold mb-1' }, 'Corporate Email *'), React.createElement('input', { name: 'emp_email', type: 'email', required: true, placeholder: 'ananya.s@odoo.com', className: 'w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-medium' }))
+              ),
+              React.createElement(
+                'div',
+                { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3' },
+                React.createElement('div', null, React.createElement('label', { className: 'block text-slate-300 font-semibold mb-1' }, 'Mobile Number'), React.createElement('input', { name: 'emp_mobile', defaultValue: '+91 ', placeholder: '+91 98765 43210', className: 'w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono' })),
+                React.createElement('div', null, React.createElement('label', { className: 'block text-slate-300 font-semibold mb-1' }, 'Employee ID'), React.createElement('input', { name: 'emp_id', placeholder: 'EMP-1049', className: 'w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono' }))
+              ),
+              React.createElement(
+                'div',
+                { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3' },
+                React.createElement(
+                  'div',
+                  null,
+                  React.createElement('label', { className: 'block text-slate-300 font-semibold mb-1' }, 'Department'),
+                  React.createElement(
+                    'select',
+                    { name: 'emp_dept', className: 'w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-medium' },
+                    ['Engineering', 'Sales & Marketing', 'Product & Design', 'Human Resources', 'Finance & Legal', 'Operations'].map((d) => React.createElement('option', { key: d, value: d }, d))
+                  )
+                ),
+                React.createElement('div', null, React.createElement('label', { className: 'block text-slate-300 font-semibold mb-1' }, 'Reporting Manager'), React.createElement('input', { name: 'emp_manager', defaultValue: 'Raj Patel', className: 'w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-medium' }))
+              ),
+              React.createElement(
+                'div',
+                { className: 'grid grid-cols-1 sm:grid-cols-3 gap-3' },
+                React.createElement(
+                  'div',
+                  null,
+                  React.createElement('label', { className: 'block text-slate-300 font-semibold mb-1' }, 'Office Location'),
+                  React.createElement(
+                    'select',
+                    { name: 'emp_loc', className: 'w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white' },
+                    ['GIFT City Tower B', 'Infocity Gandhinagar', 'SG Highway Campus'].map((l) => React.createElement('option', { key: l, value: l }, l))
+                  )
+                ),
+                React.createElement(
+                  'div',
+                  null,
+                  React.createElement('label', { className: 'block text-slate-300 font-semibold mb-1' }, 'Role'),
+                  React.createElement(
+                    'select',
+                    { name: 'emp_role', className: 'w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white' },
+                    React.createElement('option', { value: 'employee' }, 'Employee'),
+                    React.createElement('option', { value: 'admin' }, 'Admin')
+                  )
+                ),
+                React.createElement(
+                  'div',
+                  null,
+                  React.createElement('label', { className: 'block text-slate-300 font-semibold mb-1' }, 'Platform Access'),
+                  React.createElement(
+                    'select',
+                    { name: 'emp_access', className: 'w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white' },
+                    React.createElement('option', { value: 'granted' }, 'Granted'),
+                    React.createElement('option', { value: 'revoked' }, 'Revoked')
+                  )
+                )
+              ),
+              React.createElement(
+                'div',
+                { className: 'flex justify-end gap-2.5 pt-3 border-t border-slate-800' },
+                React.createElement('button', { type: 'button', onClick: () => setShowAddEmp(false), className: 'px-4 py-2 rounded-xl text-slate-400 hover:text-white' }, 'Cancel'),
+                React.createElement('button', { type: 'submit', className: 'px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-lg shadow-purple-600/30' }, 'Save & Grant Access')
+              )
+            )
+          )
+        ),
+      // --- Add Vehicle Modal (Admin & Driver) ---
+      showAddVehicle &&
+        React.createElement(
+          'div',
+          { className: 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-lg animate-fade-in text-xs' },
+          React.createElement(
+            'div',
+            { className: 'w-full max-w-lg rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl p-6 sm:p-8 space-y-4 max-h-[90vh] overflow-y-auto' },
+            React.createElement(
+              'div',
+              { className: 'flex justify-between items-center pb-3 border-b border-slate-800' },
+              React.createElement(
+                'div',
+                null,
+                React.createElement('h3', { className: 'text-lg font-extrabold text-white tracking-tight' }, 'Register Fleet Vehicle'),
+                React.createElement('p', { className: 'text-xs text-slate-400' }, 'Add vehicle to corporate mobility pool')
+              ),
+              React.createElement('button', { onClick: () => setShowAddVehicle(false), className: 'p-1 rounded-lg text-slate-400 hover:text-white font-bold' }, '✕')
+            ),
+            React.createElement(
+              'form',
+              {
+                onSubmit: (e) => {
+                  e.preventDefault();
+                  const form = e.target;
+                  const model = form.veh_model.value.trim();
+                  const registrationNumber = form.veh_reg.value.trim().toUpperCase();
+                  const seatingCapacity = parseInt(form.veh_seats.value) || 4;
+                  const fuelType = form.veh_fuel.value;
+                  const color = form.veh_color.value.trim() || 'Pearl White';
+                  const driverName = form.veh_driver.value.trim() || currentUser.name;
+
+                  if (!model || !registrationNumber) {
+                    toast.show('Validation Error', 'Please enter Vehicle Model and Registration Number.', 'error');
+                    return;
+                  }
+
+                  const newVeh = {
+                    id: `veh-${Date.now()}`,
+                    userId: currentUser.id,
+                    driverName,
+                    model,
+                    registrationNumber,
+                    seatingCapacity,
+                    vehicleType: 'Sedan',
+                    fuelType,
+                    color,
+                    status: 'approved',
+                    isDefault: false,
+                    insuranceValidTill: '2027-12-31',
+                    pucValidTill: '2027-06-30',
+                    rating: 5.0,
+                  };
+
+                  const updatedVehicles = [...vehicles, newVeh];
+                  store.setVehicles(updatedVehicles);
+                  setVehicles(updatedVehicles);
+                  toast.show('Vehicle Registered!', `${model} (${registrationNumber}) is now active in fleet.`);
+                  setShowAddVehicle(false);
+                },
+                className: 'space-y-3.5',
+              },
+              React.createElement(
+                'div',
+                { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3' },
+                React.createElement('div', null, React.createElement('label', { className: 'block text-slate-300 font-semibold mb-1' }, 'Vehicle Model *'), React.createElement('input', { name: 'veh_model', required: true, placeholder: 'e.g. Honda City i-VTEC', className: 'w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-medium' })),
+                React.createElement('div', null, React.createElement('label', { className: 'block text-slate-300 font-semibold mb-1' }, 'Registration Number *'), React.createElement('input', { name: 'veh_reg', required: true, placeholder: 'e.g. GJ-01-AB-4455', className: 'w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white uppercase font-mono font-bold' }))
+              ),
+              React.createElement(
+                'div',
+                { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3' },
+                React.createElement(
+                  'div',
+                  null,
+                  React.createElement('label', { className: 'block text-slate-300 font-semibold mb-1' }, 'Seating Capacity'),
+                  React.createElement(
+                    'select',
+                    { name: 'veh_seats', className: 'w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white' },
+                    ['4 Seats', '5 Seats', '6 Seats', '7 Seats'].map((s) => React.createElement('option', { key: s, value: parseInt(s) }, s))
+                  )
+                ),
+                React.createElement(
+                  'div',
+                  null,
+                  React.createElement('label', { className: 'block text-slate-300 font-semibold mb-1' }, 'Fuel Type'),
+                  React.createElement(
+                    'select',
+                    { name: 'veh_fuel', className: 'w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white' },
+                    ['Electric (EV)', 'Petrol', 'Diesel', 'CNG', 'Hybrid'].map((f) => React.createElement('option', { key: f, value: f }, f))
+                  )
+                )
+              ),
+              React.createElement(
+                'div',
+                { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3' },
+                React.createElement('div', null, React.createElement('label', { className: 'block text-slate-300 font-semibold mb-1' }, 'Vehicle Color'), React.createElement('input', { name: 'veh_color', defaultValue: 'Pearl White', className: 'w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white' })),
+                React.createElement('div', null, React.createElement('label', { className: 'block text-slate-300 font-semibold mb-1' }, 'Assigned Driver / Owner'), React.createElement('input', { name: 'veh_driver', defaultValue: currentUser.name, className: 'w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white' }))
+              ),
+              React.createElement(
+                'div',
+                { className: 'flex justify-end gap-2.5 pt-3 border-t border-slate-800' },
+                React.createElement('button', { type: 'button', onClick: () => setShowAddVehicle(false), className: 'px-4 py-2 rounded-xl text-slate-400 hover:text-white' }, 'Cancel'),
+                React.createElement('button', { type: 'submit', className: 'px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-lg shadow-purple-600/30' }, 'Save & Register Vehicle')
+              )
+            )
+          )
+        ),
       // --- Recharge Modal ---
       showRecharge &&
         React.createElement(
