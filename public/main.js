@@ -285,7 +285,12 @@
     // Theme Management (Dark & Light)
     const [theme, setTheme] = useState(() => {
       if (store.getTheme) return store.getTheme();
-      return localStorage.getItem('carpool_theme') || 'dark';
+      try {
+        if (typeof localStorage !== 'undefined') {
+          return localStorage.getItem('carpool_theme') || 'dark';
+        }
+      } catch (e) {}
+      return 'dark';
     });
 
     const isLight = theme === 'light';
@@ -307,6 +312,7 @@
     const [empSearch, setEmpSearch] = useState('');
     const [vehSearch, setVehSearch] = useState('');
     const [deptFilter, setDeptFilter] = useState('all');
+    const [filterType, setFilterType] = useState('all');
 
     // Global Modal States
     const [showSearch, setShowSearch] = useState(false);
