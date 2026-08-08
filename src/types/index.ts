@@ -99,26 +99,52 @@ export interface Trip {
   distanceRemainingKm?: number;
 }
 
+export type TransactionType = 'CREDIT' | 'DEBIT' | 'credit' | 'debit';
+export type TransactionCategory = 'WALLET_RECHARGE' | 'RIDE_PAYMENT' | 'REFUND';
+export type PaymentStatus = 'CREATED' | 'PENDING' | 'SUCCESS' | 'FAILED' | 'CANCELLED' | 'REFUNDED' | 'success' | 'pending' | 'failed';
+
 export interface WalletTransaction {
   id: string;
+  transactionId?: string;
   userId: string;
-  type: 'credit' | 'debit';
+  type: TransactionType;
+  category?: TransactionCategory;
   amount: number;
+  balanceBefore?: number;
+  balanceAfter?: number;
   description: string;
-  timestamp: string;
-  paymentMethod: 'UPI' | 'Card' | 'NetBanking' | 'Wallet' | 'Cash' | 'Auto-Refund';
-  status: 'success' | 'pending' | 'failed';
+  timestamp?: string;
+  createdAt?: string;
+  completedAt?: string;
+  paymentMethod?: string;
+  paymentProvider?: string;
+  status: PaymentStatus;
   referenceId: string;
+  paymentId?: string;
+  orderId?: string;
+}
+
+export interface UserWallet {
+  userId: string;
+  balance: number;
+  currency: string;
+  updatedAt: string;
 }
 
 export interface PaymentMethodItem {
   id: string;
   userId: string;
-  type: 'Cash' | 'Card' | 'UPI' | 'Wallet';
+  type: 'Cash' | 'Card' | 'UPI' | 'Wallet' | 'NetBanking';
   title: string;
   details: string; // e.g. "•••• 4242" or "raj@okaxis"
   isDefault: boolean;
   upiQrData?: string;
+  upiId?: string;
+  cardBrand?: string;
+  cardExpiry?: string;
+  cardLast4?: string;
+  bankName?: string;
+  isVerified?: boolean;
 }
 
 export interface SavedPlace {
@@ -176,3 +202,61 @@ export interface MonthlyFinancialSummary {
   ridesCount: number;
   co2SavedKg: number;
 }
+
+export interface FeedbackItem {
+  id: string;
+  userId?: string;
+  userName: string;
+  userEmail: string;
+  category: string;
+  rating: number;
+  message: string;
+  createdAt: string;
+}
+
+export type TicketPriority = 'Low' | 'Medium' | 'High';
+export type TicketStatus = 'OPEN' | 'IN PROGRESS' | 'RESOLVED' | 'CLOSED';
+
+export interface TicketReply {
+  id: string;
+  ticketId: string;
+  senderId: string;
+  senderName: string;
+  senderRole: string;
+  message: string;
+  createdAt: string;
+}
+
+export interface SupportTicket {
+  id: string;
+  ticketNumber: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  subject: string;
+  category: string;
+  description: string;
+  priority: TicketPriority;
+  attachment?: string;
+  status: TicketStatus;
+  createdAt: string;
+  updatedAt: string;
+  replies?: TicketReply[];
+}
+
+export type ReportTimeRange = '7d' | '30d' | '3m' | '6m' | '1y' | 'all';
+
+export interface ReportSummaryMetrics {
+  totalRides: number;
+  completedRides: number;
+  cancelledRides: number;
+  pendingRides: number;
+  totalDistanceKm: number;
+  totalSpent: number;
+  totalEarned: number;
+  averageFare: number;
+  averageRating: number;
+  avgDistanceKm: number;
+  co2SavedKg: number;
+}
+

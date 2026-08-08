@@ -501,35 +501,663 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { trips: formattedTrips });
     }
 
-    // --- 9. GET /api/wallet & POST /api/wallet/recharge ---
-    if (pathname === '/api/wallet' && method === 'GET') {
-      const activeUser = user || db.prepare('SELECT id, wallet_balance FROM employees WHERE role = "employee" LIMIT 1').get();
-      const balance = activeUser?.wallet_balance || 500;
-      const transactions = db.prepare('SELECT * FROM wallet_transactions WHERE employee_id = ? ORDER BY created_at DESC').all(activeUser?.id || 'emp-001');
+    // --- PAYMENT METHODS CRUD ENDPOINTS ---
+    if (pathname === '/api/payment-methods' && method === 'GET') {
+      try {
+        let uId = query.userId || user?.id || 'emp-001';
+        const empExists = db.prepare('SELECT id FROM employees WHERE id = ?').get(uId);
+        if (!empExists) {
+          const firstEmp = db.prepare('SELECT id FROM employees LIMIT 1').get();
+          uId = firstEmp ? firstEmp.id : 'emp-001';
+        }
 
-      return sendJson(res, 200, { success: true, balance, transactions });
+        let methods = db.prepare('SELECT * FROM payment_methods WHERE user_id = ? ORDER BY is_default DESC, created_at DESC').all(uId);
+        
+        // Auto-seed default methods if user has none
+        if (methods.length === 0) {
+          const now = new Date().toISOString();
+          const initial = [
+            { id: `pm-${Date.now()}-1`, user_id: uId, type: 'UPI', title: 'Corporate UPI Handle', details: 'raj.patel@okaxis', is_default: 1, upi_id: 'raj.patel@okaxis', is_verified: 1, created_at: now },
+            { id: `pm-${Date.now()}-2`, user_id: uId, type: 'Card', title: 'HDFC Corporate Visa Card', details: '•••• 4892 (Exp 09/29)', is_default: 0, card_last4: '4892', card_brand: 'Visa', card_expiry: '09/29', is_verified: 1, created_at: now },
+            { id: `pm-${Date.now()}-3`, user_id: uId, type: 'Wallet', title: 'Carpool Corporate Wallet', details: 'Pre-loaded Commute Balance', is_default: 0, is_verified: 1, created_at: now },
+          ];
+          for (const item of initial) {
+            db.prepare(`
+              INSERT INTO payment_methods (id, user_id, type, title, details, is_default, upi_id, card_last4, card_brand, card_expiry, bank_name, is_verified, created_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).run(item.id, item.user_id, item.type, item.title, item.details, item.is_default, item.upi_id || null, item.card_last4 || null, item.card_brand || null, item.card_expiry || null, null, item.is_verified || 1, item.created_at);
+          }
+          methods = db.prepare('SELECT * FROM payment_methods WHERE user_id = ? ORDER BY is_default DESC, created_at DESC').all(uId);
+        }
+
+        const formatted = methods.map((m) => ({
+          id: m.id,
+          userId: m.user_id,
+          type: m.type,
+          title: m.title,
+          details: m.details,
+          isDefault: Boolean(m.is_default),
+          upiId: m.upi_id,
+          cardLast4: m.card_last4,
+          cardBrand: m.card_brand,
+          cardExpiry: m.card_expiry,
+          bankName: m.bank_name,
+          isVerified: Boolean(m.is_verified),
+          createdAt: m.created_at,
+        }));
+
+        return sendJson(res, 200, { success: true, paymentMethods: formatted });
+      } catch (err) {
+        console.error('[API Error] GET /api/payment-methods:', err);
+        return sendJson(res, 500, { error: 'Failed to retrieve payment methods.' });
+      }
     }
 
-    if (pathname === '/api/wallet/recharge' && method === 'POST') {
-      const activeUser = user || db.prepare('SELECT id FROM employees WHERE role = "employee" LIMIT 1').get();
+    if (pathname === '/api/payment-methods' && method === 'POST') {
+      try {
+        const body = await parseJsonBody(req);
+        const { type, title, details, isDefault, upiId, cardLast4, cardBrand, cardExpiry, bankName } = body;
+        
+        let targetUserId = body.userId || user?.id || 'emp-001';
+        const empExists = db.prepare('SELECT id FROM employees WHERE id = ?').get(targetUserId);
+        if (!empExists) {
+          const firstEmp = db.prepare('SELECT id FROM employees LIMIT 1').get();
+          targetUserId = firstEmp ? firstEmp.id : 'emp-001';
+        }
+
+        if (!type || !title) {
+          return sendJson(res, 400, { error: 'Payment method type and title are required.' });
+        }
+
+        const newId = `pm-${Date.now()}`;
+        const now = new Date().toISOString();
+        const isDefVal = isDefault ? 1 : 0;
+
+        if (isDefVal === 1) {
+          db.prepare('UPDATE payment_methods SET is_default = 0 WHERE user_id = ?').run(targetUserId);
+        }
+
+        db.prepare(`
+          INSERT INTO payment_methods (id, user_id, type, title, details, is_default, upi_id, card_last4, card_brand, card_expiry, bank_name, is_verified, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          newId,
+          targetUserId,
+          type,
+          title.trim(),
+          details ? details.trim() : '',
+          isDefVal,
+          upiId || null,
+          cardLast4 || null,
+          cardBrand || null,
+          cardExpiry || null,
+          bankName || null,
+          1,
+          now
+        );
+
+        const created = db.prepare('SELECT * FROM payment_methods WHERE id = ?').get(newId);
+        return sendJson(res, 201, {
+          success: true,
+          paymentMethod: {
+            id: created.id,
+            userId: created.user_id,
+            type: created.type,
+            title: created.title,
+            details: created.details,
+            isDefault: Boolean(created.is_default),
+            upiId: created.upi_id,
+            cardLast4: created.card_last4,
+            cardBrand: created.card_brand,
+            cardExpiry: created.card_expiry,
+            bankName: created.bank_name,
+            isVerified: Boolean(created.is_verified),
+            createdAt: created.created_at,
+          },
+        });
+      } catch (err) {
+        console.error('[API Error] POST /api/payment-methods:', err);
+        return sendJson(res, 500, { error: 'Failed to save payment method.' });
+      }
+    }
+
+    const pmDefaultMatch = pathname.match(/^\/api\/payment-methods\/([a-zA-Z0-9_-]+)\/default$/);
+    if (pmDefaultMatch && method === 'PATCH') {
+      try {
+        const pmId = pmDefaultMatch[1];
+        const existing = db.prepare('SELECT * FROM payment_methods WHERE id = ?').get(pmId);
+        if (!existing) {
+          return sendJson(res, 404, { error: 'Payment method not found.' });
+        }
+
+        db.prepare('UPDATE payment_methods SET is_default = 0 WHERE user_id = ?').run(existing.user_id);
+        db.prepare('UPDATE payment_methods SET is_default = 1 WHERE id = ?').run(pmId);
+
+        return sendJson(res, 200, { success: true, message: 'Default payment method updated.' });
+      } catch (err) {
+        console.error('[API Error] PATCH /api/payment-methods/default:', err);
+        return sendJson(res, 500, { error: 'Failed to update default payment method.' });
+      }
+    }
+
+    const pmDeleteMatch = pathname.match(/^\/api\/payment-methods\/([a-zA-Z0-9_-]+)$/);
+    if (pmDeleteMatch && method === 'DELETE') {
+      try {
+        const pmId = pmDeleteMatch[1];
+        const existing = db.prepare('SELECT * FROM payment_methods WHERE id = ?').get(pmId);
+        if (!existing) {
+          return sendJson(res, 404, { error: 'Payment method not found.' });
+        }
+
+        db.prepare('DELETE FROM payment_methods WHERE id = ?').run(pmId);
+        return sendJson(res, 200, { success: true, message: 'Payment method removed.' });
+      } catch (err) {
+        console.error('[API Error] DELETE /api/payment-methods:', err);
+        return sendJson(res, 500, { error: 'Failed to delete payment method.' });
+      }
+    }
+
+    // --- FEEDBACK ENDPOINTS ---
+    if (pathname === '/api/feedback' && method === 'GET') {
+      try {
+        const feedbackList = db.prepare('SELECT * FROM feedback ORDER BY created_at DESC').all();
+        const formatted = feedbackList.map((f) => ({
+          id: f.id,
+          userId: f.user_id,
+          userName: f.user_name,
+          userEmail: f.user_email,
+          category: f.category,
+          rating: f.rating,
+          message: f.message,
+          createdAt: f.created_at,
+        }));
+        return sendJson(res, 200, { success: true, feedback: formatted });
+      } catch (err) {
+        console.error('[API Error] GET /api/feedback:', err);
+        return sendJson(res, 500, { error: 'Failed to retrieve feedback.' });
+      }
+    }
+
+    if (pathname === '/api/feedback' && method === 'POST') {
+      try {
+        const body = await parseJsonBody(req);
+        const { name, email, category, rating, message } = body;
+        if (!name || !email || !category || !message) {
+          return sendJson(res, 400, { error: 'Name, email, category, and feedback message are required.' });
+        }
+        const newId = `fb-${Date.now()}`;
+        const now = new Date().toISOString();
+        const uId = body.userId || user?.id || null;
+
+        db.prepare(`
+          INSERT INTO feedback (id, user_id, user_name, user_email, category, rating, message, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(newId, uId, name.trim(), email.trim(), category.trim(), parseInt(rating) || 5, message.trim(), now);
+
+        const created = db.prepare('SELECT * FROM feedback WHERE id = ?').get(newId);
+        return sendJson(res, 201, {
+          success: true,
+          message: 'Thank you! Your feedback has been submitted successfully.',
+          feedback: created,
+        });
+      } catch (err) {
+        console.error('[API Error] POST /api/feedback:', err);
+        return sendJson(res, 500, { error: 'Failed to submit feedback.' });
+      }
+    }
+
+    // --- SUPPORT TICKET ENDPOINTS ---
+    if (pathname === '/api/tickets' && method === 'GET') {
+      try {
+        const queryUserId = parsedUrl.searchParams.get('userId') || user?.id;
+        let tickets;
+        if (queryUserId && user?.role !== 'admin') {
+          tickets = db.prepare('SELECT * FROM support_tickets WHERE user_id = ? ORDER BY created_at DESC').all(queryUserId);
+        } else {
+          tickets = db.prepare('SELECT * FROM support_tickets ORDER BY created_at DESC').all();
+        }
+
+        const formatted = tickets.map((t) => ({
+          id: t.id,
+          ticketNumber: t.ticket_number,
+          userId: t.user_id,
+          userName: t.user_name,
+          userEmail: t.user_email,
+          subject: t.subject,
+          category: t.category,
+          description: t.description,
+          priority: t.priority,
+          attachment: t.attachment,
+          status: t.status,
+          createdAt: t.created_at,
+          updatedAt: t.updated_at,
+        }));
+        return sendJson(res, 200, { success: true, tickets: formatted });
+      } catch (err) {
+        console.error('[API Error] GET /api/tickets:', err);
+        return sendJson(res, 500, { error: 'Failed to retrieve support tickets.' });
+      }
+    }
+
+    if (pathname === '/api/tickets' && method === 'POST') {
+      try {
+        const body = await parseJsonBody(req);
+        const { subject, category, description, priority, attachment, name, email, userId } = body;
+        if (!subject || !category || !description) {
+          return sendJson(res, 400, { error: 'Subject, category, and description are required.' });
+        }
+
+        const targetUserId = userId || user?.id || 'emp-001';
+        const targetName = name || user?.name || 'Raj Patel';
+        const targetEmail = email || user?.email || 'raj.patel@odoo.com';
+
+        let resolvedUserId = targetUserId;
+        const existingEmp = db.prepare('SELECT id FROM employees WHERE id = ?').get(resolvedUserId);
+        if (!existingEmp) {
+          const fallbackEmp = db.prepare('SELECT id FROM employees WHERE email = ? OR 1=1 LIMIT 1').get(targetEmail);
+          resolvedUserId = fallbackEmp ? fallbackEmp.id : 'emp-001';
+        }
+
+        const randNum = Math.floor(10000 + Math.random() * 90000);
+        const ticketNumber = `CK-${randNum}`;
+        const newId = `tkt-${Date.now()}`;
+        const now = new Date().toISOString();
+
+        db.prepare(`
+          INSERT INTO support_tickets (id, ticket_number, user_id, user_name, user_email, subject, category, description, priority, attachment, status, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          newId,
+          ticketNumber,
+          resolvedUserId,
+          targetName,
+          targetEmail,
+          subject.trim(),
+          category.trim(),
+          description.trim(),
+          priority || 'Medium',
+          attachment || null,
+          'OPEN',
+          now,
+          now
+        );
+
+        // Initial system or user comment
+        db.prepare(`
+          INSERT INTO ticket_replies (id, ticket_id, sender_id, sender_name, sender_role, message, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).run(`rep-${Date.now()}`, newId, targetUserId, targetName, 'employee', description.trim(), now);
+
+        const created = db.prepare('SELECT * FROM support_tickets WHERE id = ?').get(newId);
+        return sendJson(res, 201, {
+          success: true,
+          ticket: {
+            id: created.id,
+            ticketNumber: created.ticket_number,
+            userId: created.user_id,
+            userName: created.user_name,
+            userEmail: created.user_email,
+            subject: created.subject,
+            category: created.category,
+            description: created.description,
+            priority: created.priority,
+            attachment: created.attachment,
+            status: created.status,
+            createdAt: created.created_at,
+            updatedAt: created.updated_at,
+          },
+        });
+      } catch (err) {
+        console.error('[API Error] POST /api/tickets:', err);
+        return sendJson(res, 500, { error: 'Failed to create support ticket.' });
+      }
+    }
+
+    const ticketDetailMatch = pathname.match(/^\/api\/tickets\/([a-zA-Z0-9_-]+)$/);
+    if (ticketDetailMatch && method === 'GET') {
+      try {
+        const ticketId = ticketDetailMatch[1];
+        const ticket = db.prepare('SELECT * FROM support_tickets WHERE id = ? OR ticket_number = ?').get(ticketId, ticketId);
+        if (!ticket) {
+          return sendJson(res, 404, { error: 'Support ticket not found.' });
+        }
+        const replies = db.prepare('SELECT * FROM ticket_replies WHERE ticket_id = ? ORDER BY created_at ASC').all(ticket.id);
+        return sendJson(res, 200, {
+          success: true,
+          ticket: {
+            id: ticket.id,
+            ticketNumber: ticket.ticket_number,
+            userId: ticket.user_id,
+            userName: ticket.user_name,
+            userEmail: ticket.user_email,
+            subject: ticket.subject,
+            category: ticket.category,
+            description: ticket.description,
+            priority: ticket.priority,
+            attachment: ticket.attachment,
+            status: ticket.status,
+            createdAt: ticket.created_at,
+            updatedAt: ticket.updated_at,
+            replies: replies.map((r) => ({
+              id: r.id,
+              ticketId: r.ticket_id,
+              senderId: r.sender_id,
+              senderName: r.sender_name,
+              senderRole: r.sender_role,
+              message: r.message,
+              createdAt: r.created_at,
+            })),
+          },
+        });
+      } catch (err) {
+        console.error('[API Error] GET /api/tickets/:id:', err);
+        return sendJson(res, 500, { error: 'Failed to fetch ticket details.' });
+      }
+    }
+
+    const ticketReplyMatch = pathname.match(/^\/api\/tickets\/([a-zA-Z0-9_-]+)\/replies$/);
+    if (ticketReplyMatch && method === 'POST') {
+      try {
+        const ticketId = ticketReplyMatch[1];
+        const body = await parseJsonBody(req);
+        const { message, senderName, senderRole, senderId } = body;
+        if (!message || !message.trim()) {
+          return sendJson(res, 400, { error: 'Reply message cannot be empty.' });
+        }
+
+        const ticket = db.prepare('SELECT * FROM support_tickets WHERE id = ?').get(ticketId);
+        if (!ticket) {
+          return sendJson(res, 404, { error: 'Support ticket not found.' });
+        }
+
+        const now = new Date().toISOString();
+        const repId = `rep-${Date.now()}`;
+        const sId = senderId || user?.id || 'usr-1';
+        const sName = senderName || user?.name || 'Staff';
+        const sRole = senderRole || user?.role || 'employee';
+
+        db.prepare(`
+          INSERT INTO ticket_replies (id, ticket_id, sender_id, sender_name, sender_role, message, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).run(repId, ticketId, sId, sName, sRole, message.trim(), now);
+
+        db.prepare('UPDATE support_tickets SET updated_at = ? WHERE id = ?').run(now, ticketId);
+
+        return sendJson(res, 201, {
+          success: true,
+          reply: {
+            id: repId,
+            ticketId,
+            senderId: sId,
+            senderName: sName,
+            senderRole: sRole,
+            message: message.trim(),
+            createdAt: now,
+          },
+        });
+      } catch (err) {
+        console.error('[API Error] POST /api/tickets/:id/replies:', err);
+        return sendJson(res, 500, { error: 'Failed to post reply.' });
+      }
+    }
+
+    const ticketStatusMatch = pathname.match(/^\/api\/tickets\/([a-zA-Z0-9_-]+)\/status$/);
+    if (ticketStatusMatch && method === 'PATCH') {
+      try {
+        const ticketId = ticketStatusMatch[1];
+        const body = await parseJsonBody(req);
+        const { status } = body;
+        const validStatuses = ['OPEN', 'IN PROGRESS', 'RESOLVED', 'CLOSED'];
+        if (!status || !validStatuses.includes(status.toUpperCase())) {
+          return sendJson(res, 400, { error: 'Invalid ticket status. Must be OPEN, IN PROGRESS, RESOLVED, or CLOSED.' });
+        }
+
+        const now = new Date().toISOString();
+        db.prepare('UPDATE support_tickets SET status = ?, updated_at = ? WHERE id = ?').run(status.toUpperCase(), now, ticketId);
+        return sendJson(res, 200, { success: true, status: status.toUpperCase(), updatedAt: now });
+      } catch (err) {
+        console.error('[API Error] PATCH /api/tickets/:id/status:', err);
+        return sendJson(res, 500, { error: 'Failed to update ticket status.' });
+      }
+    }
+
+    // --- 9. GET /api/wallet & POST /api/wallet/recharge/* ---
+    if (pathname === '/api/wallet' && method === 'GET') {
+      const queryUserId = parsedUrl.searchParams.get('userId');
+      const activeUser = user || (queryUserId ? db.prepare('SELECT id, wallet_balance FROM employees WHERE id = ?').get(queryUserId) : null) || db.prepare("SELECT id, wallet_balance FROM employees WHERE role = 'employee' LIMIT 1").get();
+      const uId = activeUser?.id || 'emp-001';
+
+      let wallet = db.prepare('SELECT * FROM wallets WHERE user_id = ?').get(uId);
+      if (!wallet) {
+        const bal = activeUser?.wallet_balance || 0.0;
+        const now = new Date().toISOString();
+        db.prepare('INSERT OR IGNORE INTO wallets (user_id, balance, currency, updated_at) VALUES (?, ?, ?, ?)').run(uId, bal, 'INR', now);
+        wallet = { user_id: uId, balance: bal, currency: 'INR', updated_at: now };
+      }
+
+      const transactions = db.prepare(`
+        SELECT * FROM wallet_transactions 
+        WHERE user_id = ? OR employee_id = ? 
+        ORDER BY created_at DESC
+      `).all(uId, uId);
+
+      return sendJson(res, 200, { success: true, userId: uId, balance: wallet.balance, currency: wallet.currency, transactions });
+    }
+
+    // Create Recharge Order & Pending Ledger Entry
+    if ((pathname === '/api/wallet/recharge/create-order' || pathname === '/api/razorpay/create-order') && method === 'POST') {
       const body = await parseJsonBody(req);
-      const amount = parseFloat(body.amount) || 500;
+      const amount = parseFloat(body.amount);
+      const rawUserId = body.userId || user?.id || 'emp-001';
 
-      const now = new Date().toISOString();
+      if (isNaN(amount) || amount < 200) {
+        return sendJson(res, 400, { error: 'Minimum recharge amount is ₹200.' });
+      }
+
+      let emp = db.prepare('SELECT id, wallet_balance FROM employees WHERE id = ?').get(rawUserId);
+      if (!emp) {
+        emp = db.prepare('SELECT id, wallet_balance FROM employees WHERE employee_id = ?').get(rawUserId);
+      }
+      if (!emp && typeof rawUserId === 'string' && rawUserId.startsWith('usr-')) {
+        const num = rawUserId.replace('usr-', '').padStart(3, '0');
+        emp = db.prepare('SELECT id, wallet_balance FROM employees WHERE id = ?').get(`emp-${num}`);
+      }
+      if (!emp) {
+        emp = db.prepare("SELECT id, wallet_balance FROM employees WHERE role = 'employee' LIMIT 1").get();
+      }
+      const validEmpId = emp ? emp.id : 'emp-001';
+
+      let wallet = db.prepare('SELECT * FROM wallets WHERE user_id = ?').get(validEmpId);
+      const currentBalance = wallet ? wallet.balance : (emp ? emp.wallet_balance : 0);
+
+      const orderId = `order_${crypto.randomBytes(8).toString('hex')}`;
       const txId = `tx-${Date.now()}`;
+      const now = new Date().toISOString();
+      const refId = `REF-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
 
-      db.prepare('UPDATE employees SET wallet_balance = wallet_balance + ? WHERE id = ?').run(amount, activeUser.id);
-      db.prepare('INSERT INTO wallet_transactions (id, employee_id, amount, type, description, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
+      // Create internal PENDING transaction record
+      db.prepare(`
+        INSERT INTO wallet_transactions (id, user_id, employee_id, type, category, amount, balance_before, balance_after, status, payment_provider, order_id, description, reference_id, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
         txId,
-        activeUser.id,
+        validEmpId,
+        validEmpId,
+        'CREDIT',
+        'WALLET_RECHARGE',
         amount,
-        'recharge',
-        `UPI Top-Up - Ref #UPI-${Math.floor(100000 + Math.random() * 900000)}`,
+        currentBalance,
+        currentBalance,
+        'PENDING',
+        'Razorpay UPI',
+        orderId,
+        `Wallet Top-Up via UPI (${body.paymentMethod || 'Google Pay'}) - Pending`,
+        refId,
         now
       );
 
-      const updated = db.prepare('SELECT wallet_balance FROM employees WHERE id = ?').get(activeUser.id);
-      return sendJson(res, 200, { success: true, newBalance: updated.wallet_balance, txId });
+      const upiUri = `upi://pay?pa=carpool.kolkata@okaxis&pn=${encodeURIComponent('Carpool Kolkata')}&am=${amount}&cu=INR&tn=${encodeURIComponent(`Wallet Recharge ${refId}`)}`;
+
+      return sendJson(res, 200, {
+        success: true,
+        orderId,
+        txId,
+        amount: Math.round(amount * 100),
+        currency: 'INR',
+        keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_1DP5mmOlF5G5ag',
+        rechargeAmount: amount,
+        upiUri,
+        upiId: 'carpool.kolkata@okaxis',
+        merchantName: 'Carpool Kolkata',
+        referenceId: refId,
+      });
+    }
+
+    // Verify & Credit Wallet Atomically
+    if ((pathname === '/api/wallet/recharge' || pathname === '/api/wallet/recharge/verify' || pathname === '/api/razorpay/verify-payment') && method === 'POST') {
+      const body = await parseJsonBody(req);
+      const amount = parseFloat(body.amount) || 500;
+      const rawUserId = body.userId || user?.id || 'emp-001';
+      const paymentId = body.paymentId || body.razorpay_payment_id || `pay_${crypto.randomBytes(8).toString('hex')}`;
+      const orderId = body.orderId || body.razorpay_order_id;
+      const refId = body.referenceId || `REF-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+
+      if (amount < 200) {
+        return sendJson(res, 400, { error: 'Minimum recharge amount is ₹200.' });
+      }
+
+      let emp = db.prepare('SELECT id, wallet_balance FROM employees WHERE id = ?').get(rawUserId);
+      if (!emp) {
+        emp = db.prepare('SELECT id, wallet_balance FROM employees WHERE employee_id = ?').get(rawUserId);
+      }
+      if (!emp && typeof rawUserId === 'string' && rawUserId.startsWith('usr-')) {
+        const num = rawUserId.replace('usr-', '').padStart(3, '0');
+        emp = db.prepare('SELECT id, wallet_balance FROM employees WHERE id = ?').get(`emp-${num}`);
+      }
+      if (!emp) {
+        emp = db.prepare("SELECT id, wallet_balance FROM employees WHERE role = 'employee' LIMIT 1").get();
+      }
+      const validEmpId = emp ? emp.id : 'emp-001';
+
+      // Cryptographic HMAC Verification if Razorpay Signature is supplied
+      if (body.razorpay_signature && orderId) {
+        const secret = process.env.RAZORPAY_KEY_SECRET || 'sQzV8g1234567890abcdefgh';
+        const expected = crypto.createHmac('sha256', secret).update(`${orderId}|${paymentId}`).digest('hex');
+        try {
+          const isValid = crypto.timingSafeEqual(Buffer.from(body.razorpay_signature), Buffer.from(expected));
+          if (!isValid) {
+            return sendJson(res, 400, { error: 'Invalid payment signature. Verification failed on server.' });
+          }
+        } catch {
+          return sendJson(res, 400, { error: 'Invalid payment signature format.' });
+        }
+      }
+
+      // Idempotency Check
+      const existingSuccess = db.prepare("SELECT * FROM wallet_transactions WHERE payment_id = ? AND status = 'SUCCESS'").get(paymentId);
+      if (existingSuccess) {
+        const currentBal = db.prepare('SELECT balance FROM wallets WHERE user_id = ?').get(validEmpId)?.balance || 0;
+        return sendJson(res, 200, {
+          success: true,
+          message: 'Payment was already verified and credited (Idempotent request).',
+          newBalance: currentBal,
+          transaction: existingSuccess,
+          isDuplicate: true,
+        });
+      }
+
+      const now = new Date().toISOString();
+      const txId = body.txId || `tx-${Date.now()}`;
+
+      // Atomic SQLite Transaction
+      const executeCredit = db.transaction(() => {
+        let wallet = db.prepare('SELECT * FROM wallets WHERE user_id = ?').get(validEmpId);
+        if (!wallet) {
+          const initialBal = emp?.wallet_balance || 0.0;
+          db.prepare('INSERT OR IGNORE INTO wallets (user_id, balance, currency, updated_at) VALUES (?, ?, ?, ?)').run(validEmpId, initialBal, 'INR', now);
+          wallet = { user_id: validEmpId, balance: initialBal, currency: 'INR', updated_at: now };
+        }
+
+        const balanceBefore = wallet.balance;
+        const balanceAfter = balanceBefore + amount;
+
+        // 1. Update Wallets table
+        db.prepare('UPDATE wallets SET balance = balance + ?, updated_at = ? WHERE user_id = ?').run(amount, now, validEmpId);
+
+        // 2. Update Employees table
+        db.prepare('UPDATE employees SET wallet_balance = wallet_balance + ? WHERE id = ?').run(amount, validEmpId);
+
+        // 3. Upsert / Record SUCCESS Transaction
+        db.prepare(`
+          INSERT INTO wallet_transactions (id, user_id, employee_id, type, category, amount, balance_before, balance_after, status, payment_provider, payment_id, order_id, description, reference_id, created_at, completed_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            status = 'SUCCESS',
+            balance_after = ?,
+            payment_id = ?,
+            completed_at = ?
+        `).run(
+          txId,
+          validEmpId,
+          validEmpId,
+          'CREDIT',
+          'WALLET_RECHARGE',
+          amount,
+          balanceBefore,
+          balanceAfter,
+          'SUCCESS',
+          'Razorpay UPI',
+          paymentId,
+          orderId || null,
+          `Wallet Top-up via ${body.paymentMethod || 'UPI (Google Pay / PhonePe)'}`,
+          refId,
+          now,
+          now,
+          balanceAfter,
+          paymentId,
+          now
+        );
+
+        return { balanceAfter, balanceBefore };
+      });
+
+      const result = executeCredit();
+      const savedTx = db.prepare('SELECT * FROM wallet_transactions WHERE id = ?').get(txId);
+
+      return sendJson(res, 200, {
+        success: true,
+        message: 'Payment verified and wallet credited successfully.',
+        newBalance: result.balanceAfter,
+        transaction: savedTx,
+      });
+    }
+
+    // Cancel Recharge Transaction (Wallet Balance Remains Unchanged)
+    if (pathname === '/api/wallet/recharge/cancel' && method === 'POST') {
+      const body = await parseJsonBody(req);
+      const { txId, userId } = body;
+      const targetUserId = userId || user?.id || 'emp-001';
+
+      if (txId) {
+        db.prepare("UPDATE wallet_transactions SET status = 'CANCELLED' WHERE id = ?").run(txId);
+      }
+
+      const bal = db.prepare('SELECT balance FROM wallets WHERE user_id = ?').get(targetUserId)?.balance || 0;
+      return sendJson(res, 200, { success: true, status: 'CANCELLED', balance: bal });
+    }
+
+    // Fail Recharge Transaction (Wallet Balance Remains Unchanged)
+    if (pathname === '/api/wallet/recharge/fail' && method === 'POST') {
+      const body = await parseJsonBody(req);
+      const { txId, userId } = body;
+      const targetUserId = userId || user?.id || 'emp-001';
+
+      if (txId) {
+        db.prepare("UPDATE wallet_transactions SET status = 'FAILED' WHERE id = ?").run(txId);
+      }
+
+      const bal = db.prepare('SELECT balance FROM wallets WHERE user_id = ?').get(targetUserId)?.balance || 0;
+      return sendJson(res, 200, { success: true, status: 'FAILED', balance: bal });
     }
 
     // --- 10. GET /api/admin/employees & PATCH /api/admin/employees/:id ---

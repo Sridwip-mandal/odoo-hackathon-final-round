@@ -135,14 +135,32 @@ export function initSchema(db) {
       FOREIGN KEY (rider_id) REFERENCES employees(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS wallets (
+      user_id TEXT PRIMARY KEY,
+      balance REAL NOT NULL DEFAULT 0.0,
+      currency TEXT NOT NULL DEFAULT 'INR',
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES employees(id) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS wallet_transactions (
       id TEXT PRIMARY KEY,
-      employee_id TEXT NOT NULL,
-      amount REAL NOT NULL,
+      employee_id TEXT,
+      user_id TEXT,
       type TEXT NOT NULL,
+      category TEXT DEFAULT 'WALLET_RECHARGE',
+      amount REAL NOT NULL,
+      balance_before REAL DEFAULT 0.0,
+      balance_after REAL DEFAULT 0.0,
+      status TEXT DEFAULT 'SUCCESS',
+      payment_provider TEXT DEFAULT 'Razorpay UPI',
+      payment_id TEXT,
+      order_id TEXT,
       description TEXT,
+      reference_id TEXT,
       created_at TEXT NOT NULL,
-      FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+      completed_at TEXT,
+      FOREIGN KEY (user_id) REFERENCES employees(id) ON DELETE CASCADE
     );
 
     CREATE TABLE IF NOT EXISTS ratings (
@@ -167,12 +185,101 @@ export function initSchema(db) {
       updated_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS payment_methods (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      details TEXT NOT NULL,
+      is_default INTEGER DEFAULT 0,
+      upi_id TEXT,
+      card_last4 TEXT,
+      card_brand TEXT,
+      card_expiry TEXT,
+      bank_name TEXT,
+      is_verified INTEGER DEFAULT 1,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES employees(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS feedback (
+      id TEXT PRIMARY KEY,
+      user_id TEXT,
+      user_name TEXT NOT NULL,
+      user_email TEXT NOT NULL,
+      category TEXT NOT NULL,
+      rating INTEGER NOT NULL,
+      message TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS support_tickets (
+      id TEXT PRIMARY KEY,
+      ticket_number TEXT UNIQUE NOT NULL,
+      user_id TEXT NOT NULL,
+      user_name TEXT NOT NULL,
+      user_email TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      category TEXT NOT NULL,
+      description TEXT NOT NULL,
+      priority TEXT DEFAULT 'Medium',
+      attachment TEXT,
+      status TEXT DEFAULT 'OPEN',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES employees(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS ticket_replies (
+      id TEXT PRIMARY KEY,
+      ticket_id TEXT NOT NULL,
+      sender_id TEXT NOT NULL,
+      sender_name TEXT NOT NULL,
+      sender_role TEXT DEFAULT 'employee',
+      message TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (ticket_id) REFERENCES support_tickets(id) ON DELETE CASCADE
+    );
+
     CREATE INDEX IF NOT EXISTS idx_employees_email ON employees(email);
     CREATE INDEX IF NOT EXISTS idx_rides_status ON rides(status);
     CREATE INDEX IF NOT EXISTS idx_bookings_rider ON bookings(rider_id);
     CREATE INDEX IF NOT EXISTS idx_bookings_ride ON bookings(ride_id);
-    CREATE INDEX IF NOT EXISTS idx_tx_employee ON wallet_transactions(employee_id);
+    CREATE INDEX IF NOT EXISTS idx_payment_methods_user ON payment_methods(user_id);
+    CREATE INDEX IF NOT EXISTS idx_feedback_user ON feedback(user_id);
+    CREATE INDEX IF NOT EXISTS idx_tickets_user ON support_tickets(user_id);
+    CREATE INDEX IF NOT EXISTS idx_ticket_replies_ticket ON ticket_replies(ticket_id);
   `);
+
+  // Safe table migration for wallet_transactions columns
+  try {
+    const txCols = db.prepare('PRAGMA table_info(wallet_transactions)').all();
+    const colNames = txCols.map((c) => c.name);
+    if (!colNames.includes('user_id')) db.exec('ALTER TABLE wallet_transactions ADD COLUMN user_id TEXT;');
+    if (!colNames.includes('category')) db.exec("ALTER TABLE wallet_transactions ADD COLUMN category TEXT DEFAULT 'WALLET_RECHARGE';");
+    if (!colNames.includes('balance_before')) db.exec('ALTER TABLE wallet_transactions ADD COLUMN balance_before REAL DEFAULT 0.0;');
+    if (!colNames.includes('balance_after')) db.exec('ALTER TABLE wallet_transactions ADD COLUMN balance_after REAL DEFAULT 0.0;');
+    if (!colNames.includes('status')) db.exec("ALTER TABLE wallet_transactions ADD COLUMN status TEXT DEFAULT 'SUCCESS';");
+    if (!colNames.includes('payment_provider')) db.exec("ALTER TABLE wallet_transactions ADD COLUMN payment_provider TEXT DEFAULT 'Razorpay UPI';");
+    if (!colNames.includes('payment_id')) db.exec('ALTER TABLE wallet_transactions ADD COLUMN payment_id TEXT;');
+    if (!colNames.includes('order_id')) db.exec('ALTER TABLE wallet_transactions ADD COLUMN order_id TEXT;');
+    if (!colNames.includes('reference_id')) db.exec('ALTER TABLE wallet_transactions ADD COLUMN reference_id TEXT;');
+    if (!colNames.includes('completed_at')) db.exec('ALTER TABLE wallet_transactions ADD COLUMN completed_at TEXT;');
+    
+    db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_tx_user ON wallet_transactions(user_id);
+      CREATE INDEX IF NOT EXISTS idx_tx_payment_id ON wallet_transactions(payment_id);
+      CREATE INDEX IF NOT EXISTS idx_tx_order_id ON wallet_transactions(order_id);
+    `);
+  } catch (e) {}
+
+  // Safe migration for wallets and existing employees
+  try {
+    db.exec(`
+      INSERT OR IGNORE INTO wallets (user_id, balance, currency, updated_at)
+      SELECT id, COALESCE(wallet_balance, 0.0), 'INR', created_at FROM employees;
+    `);
+  } catch (e) {}
 }
 
 export default getDb;
