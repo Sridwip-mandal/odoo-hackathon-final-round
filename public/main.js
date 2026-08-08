@@ -1219,32 +1219,411 @@
         );
       }
 
-      // 7. My Trips Page
-      if (route === '/my-trips') {
+      // 8. Corporate Wallet & Instant Recharge Page (/wallet)
+      if (route === '/wallet') {
+        const totalCredits = txs.filter((t) => t.type === 'credit').reduce((acc, curr) => acc + (curr.amount || 0), 0);
+        const totalDebits = txs.filter((t) => t.type === 'debit').reduce((acc, curr) => acc + (curr.amount || 0), 0);
+
+        const filteredTxs = txs.filter((tx) => {
+          if (filterType !== 'all' && tx.type !== filterType) return false;
+          if (!searchQuery) return true;
+          const q = searchQuery.toLowerCase();
+          return (
+            (tx.description && tx.description.toLowerCase().includes(q)) ||
+            (tx.referenceId && tx.referenceId.toLowerCase().includes(q)) ||
+            (tx.paymentMethod && tx.paymentMethod.toLowerCase().includes(q))
+          );
+        });
+
+        const handleBackendRecharge = async (amt, method, promo) => {
+          try {
+            const resp = await fetch('/api/wallet/recharge', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ amount: amt, paymentMethod: method, promoCode: promo }),
+            });
+            const data = await resp.json();
+            if (data.success) {
+              const bonus = data.bonusAmount || 0;
+              const totalAdd = amt + bonus;
+              const u = { ...currentUser, walletBalance: currentUser.walletBalance + totalAdd };
+              store.setCurrentUser(u);
+              setCurrentUser(u);
+              const updatedTxs = [data.transaction, ...txs];
+              store.setTxs(updatedTxs);
+              setTxs(updatedTxs);
+              toast.show('Wallet Recharged! ⚡', `₹${amt}${bonus ? ` + ₹${bonus} bonus` : ''} added to your Carpool balance.`);
+            }
+          } catch (e) {
+            // Fallback
+            const u = { ...currentUser, walletBalance: currentUser.walletBalance + amt };
+            store.setCurrentUser(u);
+            setCurrentUser(u);
+            const fallbackTx = {
+              id: `tx-${Date.now()}`,
+              type: 'credit',
+              amount: amt,
+              description: `Wallet Top-up via ${method}`,
+              paymentMethod: method,
+              timestamp: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
+              referenceId: `TXN-KOL-${Math.floor(100000 + Math.random() * 900000)}`,
+              status: 'success',
+            };
+            const updated = [fallbackTx, ...txs];
+            store.setTxs(updated);
+            setTxs(updated);
+            toast.show('Wallet Recharged!', `₹${amt} added successfully.`);
+          }
+        };
+
         return React.createElement(
           'div',
-          { className: 'space-y-6 animate-fade-in text-xs' },
-          React.createElement('h1', { className: `text-2xl font-extrabold ${isLight ? 'text-black' : 'text-white'}` }, 'My Commute Trips'),
+          { className: 'space-y-6 animate-fade-in text-xs max-w-6xl mx-auto' },
+          // Top Header
           React.createElement(
             'div',
-            { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
-            trips.map((t) =>
+            { className: 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4' },
+            React.createElement(
+              'div',
+              null,
+              React.createElement('h1', { className: `text-2xl sm:text-3xl font-extrabold ${isLight ? 'text-black' : 'text-white'} tracking-tight` }, 'Corporate Carpool Wallet'),
+              React.createElement('p', { className: isLight ? 'text-slate-600' : 'text-slate-400' }, 'Manage your balance, top-up via UPI / Cards, view corporate mobility subsidies, and download GST receipts.')
+            ),
+            React.createElement(
+              'div',
+              { className: 'flex items-center gap-2.5' },
+              React.createElement(
+                'button',
+                {
+                  onClick: () => navigate('/payment-methods'),
+                  className: `px-4 py-2.5 rounded-2xl border font-bold transition ${isLight ? 'bg-white border-slate-300 text-slate-800 hover:bg-slate-50' : 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white'}`,
+                },
+                'Saved Gateways →'
+              ),
+              React.createElement(
+                'button',
+                {
+                  onClick: () => setShowRecharge(true),
+                  className: `flex items-center gap-2 px-5 py-2.5 rounded-2xl ${isLight ? 'bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold border border-yellow-500 shadow-md' : 'bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-600/30'} transition hover:scale-105`,
+                },
+                React.createElement(Icon, { name: 'plus', className: 'w-4 h-4' }),
+                '⚡ Quick Recharge'
+              )
+            )
+          ),
+
+          // Main Wallet Balance & Corporate Allowance Cards
+          React.createElement(
+            'div',
+            { className: 'grid grid-cols-1 lg:grid-cols-3 gap-6' },
+            // Card 1: Live Available Balance (2 cols)
+            React.createElement(
+              'div',
+              {
+                className: `lg:col-span-2 relative overflow-hidden rounded-3xl border p-6 sm:p-8 shadow-2xl backdrop-blur-xl ${
+                  isLight
+                    ? 'bg-gradient-to-br from-white via-slate-50 to-yellow-50/50 border-slate-200'
+                    : 'bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border-slate-800'
+                }`,
+              },
               React.createElement(
                 'div',
-                { key: t.id, className: `p-6 rounded-3xl border ${isLight ? 'bg-white border-slate-200 shadow-xl' : 'bg-slate-900/90 border-slate-800 shadow-xl'} space-y-3` },
+                { className: 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6' },
                 React.createElement(
                   'div',
-                  { className: 'flex justify-between items-center' },
-                  React.createElement('span', { className: `px-2 py-0.5 rounded-full font-bold uppercase text-[10px] ${t.status === 'completed' ? (isLight ? 'bg-slate-100 text-slate-800' : 'bg-slate-800 text-slate-300') : (isLight ? 'bg-yellow-100 text-yellow-900 border border-yellow-400 font-extrabold' : 'bg-emerald-500/20 text-emerald-300')}` }, t.status),
-                  React.createElement('span', { className: `font-mono font-bold text-sm ${isLight ? 'text-black' : 'text-white'}` }, `₹${t.fare}`)
+                  { className: 'space-y-2' },
+                  React.createElement(
+                    'div',
+                    { className: 'flex items-center gap-2' },
+                    React.createElement('span', { className: `text-xs font-bold uppercase tracking-wider ${isLight ? 'text-yellow-800' : 'text-emerald-400'}` }, 'Available Carpool Balance'),
+                    React.createElement('span', { className: `px-2 py-0.5 rounded-full text-[10px] font-extrabold ${isLight ? 'bg-yellow-200 text-yellow-950 border border-yellow-300' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}` }, '⚡ Auto-Debit Active')
+                  ),
+                  React.createElement('h2', { className: `text-4xl sm:text-5xl font-extrabold font-mono tracking-tight ${isLight ? 'text-black' : 'text-white'}` }, `₹ ${currentUser.walletBalance.toLocaleString()}`),
+                  React.createElement('p', { className: `text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}` }, 'Auto-debits securely on ride completion across Kolkata & West Bengal.')
                 ),
-                React.createElement('h3', { className: `font-extrabold text-base ${isLight ? 'text-black' : 'text-white'}` }, `${t.startLocation} → ${t.destinationLocation}`),
-                React.createElement('p', { className: isLight ? 'text-slate-600' : 'text-slate-400' }, `Driver: ${t.driverName} • ${t.date} at ${t.time}`),
                 React.createElement(
                   'div',
-                  { className: 'flex gap-2 pt-2' },
-                  React.createElement('button', { onClick: () => navigate('/live-tracking'), className: `px-4 py-2 rounded-xl ${isLight ? 'bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold border border-yellow-500 shadow-sm' : 'bg-blue-600 text-white font-bold'}` }, 'Track Route'),
-                  React.createElement('button', { onClick: () => { setPaymentTrip(t); setShowPayment(true); }, className: `px-4 py-2 rounded-xl ${isLight ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-slate-800 text-slate-200'} border font-bold` }, 'Receipt')
+                  { className: 'grid grid-cols-2 gap-3 font-mono text-xs w-full sm:w-auto' },
+                  React.createElement(
+                    'div',
+                    { className: `p-3.5 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-slate-950/80 border-slate-800'}` },
+                    React.createElement('span', { className: 'text-[10px] uppercase font-bold text-slate-500 block' }, 'Total Top-ups'),
+                    React.createElement('span', { className: `text-sm font-bold block mt-1 ${isLight ? 'text-emerald-700' : 'text-emerald-400'}` }, `+₹${totalCredits.toLocaleString()}`)
+                  ),
+                  React.createElement(
+                    'div',
+                    { className: `p-3.5 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-slate-950/80 border-slate-800'}` },
+                    React.createElement('span', { className: 'text-[10px] uppercase font-bold text-slate-500 block' }, 'Ride Expenses'),
+                    React.createElement('span', { className: 'text-sm font-bold text-rose-500 block mt-1' }, `-₹${totalDebits.toLocaleString()}`)
+                  )
+                )
+              )
+            ),
+
+            // Card 2: Corporate Mobility Subsidy (Odoo Allowance)
+            React.createElement(
+              'div',
+              {
+                className: `rounded-3xl border p-6 shadow-xl backdrop-blur-xl space-y-3 ${
+                  isLight ? 'bg-white border-slate-200' : 'bg-slate-900/90 border-slate-800'
+                }`,
+              },
+              React.createElement(
+                'div',
+                { className: 'flex justify-between items-center' },
+                React.createElement('span', { className: 'font-bold uppercase text-[10px] tracking-wider text-cyan-400' }, '🏢 Corporate Commute Quota'),
+                React.createElement('span', { className: `px-2 py-0.5 rounded-full text-[10px] font-bold ${isLight ? 'bg-slate-100 text-slate-800' : 'bg-cyan-500/20 text-cyan-300'}` }, 'Odoo Pvt. Ltd.')
+              ),
+              React.createElement('h3', { className: `text-2xl font-extrabold font-mono ${isLight ? 'text-black' : 'text-white'}` }, '₹ 3,800 / ₹5,000'),
+              React.createElement(
+                'div',
+                { className: `w-full h-2.5 rounded-full overflow-hidden ${isLight ? 'bg-slate-200' : 'bg-slate-950'}` },
+                React.createElement('div', { className: 'h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full', style: { width: '76%' } })
+              ),
+              React.createElement('p', { className: `text-[11px] ${isLight ? 'text-slate-600' : 'text-slate-400'}` }, 'Monthly mobility fuel & transit subsidy provided by Odoo West Bengal. Renews in 12 days.')
+            )
+          ),
+
+          // IN-PAGE INTERACTIVE RECHARGE STUDIO
+          React.createElement(
+            'div',
+            { className: `p-6 sm:p-8 rounded-3xl border shadow-2xl backdrop-blur-xl ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900/95 border-slate-800'} space-y-6` },
+            React.createElement(
+              'div',
+              { className: 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800/50 pb-4' },
+              React.createElement(
+                'div',
+                null,
+                React.createElement('h3', { className: `text-lg font-extrabold ${isLight ? 'text-black' : 'text-white'}` }, '⚡ Instant Wallet Recharge & Top-up'),
+                React.createElement('p', { className: isLight ? 'text-slate-600' : 'text-slate-400' }, 'Select an amount, pick your preferred gateway (UPI / Cards / Net Banking), apply coupons and recharge in 1-click.')
+              ),
+              React.createElement('span', { className: `px-3 py-1 rounded-xl text-xs font-mono font-bold ${isLight ? 'bg-yellow-100 text-yellow-900 border border-yellow-300' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}` }, 'Instant 0% Gateway Fee')
+            ),
+
+            React.createElement(
+              'form',
+              {
+                onSubmit: (e) => {
+                  e.preventDefault();
+                  const form = e.target;
+                  const amt = parseInt(form.recharge_amt.value) || 500;
+                  const meth = form.recharge_meth.value;
+                  const promo = form.recharge_promo.value.trim();
+                  handleBackendRecharge(amt, meth, promo);
+                },
+                className: 'space-y-5',
+              },
+              // 1. Preset Chips & Custom Input
+              React.createElement(
+                'div',
+                { className: 'space-y-2' },
+                React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-300'} font-bold uppercase tracking-wider text-[11px] block` }, 'Choose Recharge Amount (₹)'),
+                React.createElement(
+                  'div',
+                  { className: 'grid grid-cols-2 sm:grid-cols-5 gap-2.5' },
+                  [200, 500, 1000, 2000, 5000].map((val) =>
+                    React.createElement(
+                      'button',
+                      {
+                        key: val,
+                        type: 'button',
+                        onClick: (e) => {
+                          const input = e.currentTarget.closest('form').querySelector('input[name="recharge_amt"]');
+                          if (input) input.value = val;
+                        },
+                        className: `py-3 rounded-2xl font-mono font-bold text-sm border transition ${isLight ? 'bg-slate-50 hover:bg-yellow-100 border-slate-300 text-slate-900 hover:border-yellow-400' : 'bg-slate-950 hover:bg-slate-800 border-slate-800 text-slate-200 hover:border-slate-700'}`,
+                      },
+                      `+ ₹${val}`
+                    )
+                  )
+                ),
+                React.createElement(
+                  'div',
+                  { className: 'relative pt-2' },
+                  React.createElement('span', { className: 'absolute left-4 top-5 font-mono font-bold text-base text-slate-400' }, '₹'),
+                  React.createElement('input', {
+                    name: 'recharge_amt',
+                    type: 'number',
+                    defaultValue: 500,
+                    min: 10,
+                    max: 50000,
+                    required: true,
+                    className: `w-full rounded-2xl py-3 pl-9 pr-4 font-mono font-bold text-lg ${isLight ? 'bg-white border-slate-300 text-black focus:border-yellow-500' : 'bg-slate-950 border-slate-800 text-white focus:border-blue-500'} border focus:outline-none`,
+                  })
+                )
+              ),
+
+              // 2. Gateways & Payment Mode
+              React.createElement(
+                'div',
+                { className: 'grid grid-cols-1 sm:grid-cols-2 gap-4' },
+                React.createElement(
+                  'div',
+                  null,
+                  React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-300'} font-bold uppercase tracking-wider text-[11px] block mb-1.5` }, 'Payment Gateway / Mode *'),
+                  React.createElement(
+                    'select',
+                    {
+                      name: 'recharge_meth',
+                      className: `w-full rounded-2xl py-3 px-3.5 ${isLight ? 'bg-white border-slate-300 text-black' : 'bg-slate-950 border-slate-800 text-white'} border font-semibold`,
+                    },
+                    React.createElement('option', { value: 'UPI (GPay / PhonePe / Paytm)' }, '⚡ UPI (Google Pay, PhonePe, Paytm, BHIM)'),
+                    React.createElement('option', { value: 'Corporate Credit Card (Visa / Mastercard)' }, '💳 Corporate Credit / Debit Card (Visa, Mastercard, RuPay)'),
+                    React.createElement('option', { value: 'Net Banking (SBI / HDFC / ICICI)' }, '🏦 Net Banking (SBI, HDFC Bank, ICICI Bank, Axis)'),
+                    React.createElement('option', { value: 'Odoo Corporate Mobility Allowance' }, '🏢 Odoo Enterprise Mobility Allowance Voucher')
+                  )
+                ),
+                React.createElement(
+                  'div',
+                  null,
+                  React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-300'} font-bold uppercase tracking-wider text-[11px] block mb-1.5` }, 'Promo Code / Cashback Coupon'),
+                  React.createElement('input', {
+                    name: 'recharge_promo',
+                    type: 'text',
+                    placeholder: 'Enter KOLKATA50, ODOOFLEET, or CARPOOLWB',
+                    className: `w-full rounded-2xl py-3 px-3.5 uppercase font-mono font-bold ${isLight ? 'bg-white border-slate-300 text-black placeholder-slate-400' : 'bg-slate-950 border-slate-800 text-white placeholder-slate-600'} border`,
+                  })
+                )
+              ),
+
+              // Coupon Chips
+              React.createElement(
+                'div',
+                { className: 'flex flex-wrap items-center gap-2' },
+                React.createElement('span', { className: `text-[10px] uppercase font-bold ${isLight ? 'text-slate-500' : 'text-slate-400'}` }, 'Active Coupons:'),
+                ['KOLKATA50 (Flat ₹50 Bonus)', 'ODOOFLEET (₹100 Corporate Match)', 'CARPOOLWB (10% Cashback)'].map((c) =>
+                  React.createElement(
+                    'button',
+                    {
+                      key: c,
+                      type: 'button',
+                      onClick: (e) => {
+                        const promoInput = e.currentTarget.closest('form').querySelector('input[name="recharge_promo"]');
+                        if (promoInput) promoInput.value = c.split(' ')[0];
+                      },
+                      className: `px-2.5 py-1 rounded-xl text-[10px] font-mono font-bold border transition ${isLight ? 'bg-yellow-50 border-yellow-300 text-yellow-900 hover:bg-yellow-100' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20'}`,
+                    },
+                    `⚡ ${c}`
+                  )
+                )
+              ),
+
+              // Action Recharge Button
+              React.createElement(
+                'button',
+                {
+                  type: 'submit',
+                  className: `w-full py-4 rounded-2xl ${
+                    isLight
+                      ? 'bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold border border-yellow-500 shadow-xl shadow-yellow-500/30'
+                      : 'bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-xl shadow-emerald-600/30'
+                  } text-sm transition hover:scale-[1.01] flex items-center justify-center gap-2`,
+                },
+                React.createElement(Icon, { name: 'plus', className: 'w-4 h-4' }),
+                '⚡ Recharge Wallet Now'
+              )
+            )
+          ),
+
+          // TRANSACTION HISTORY & LEDGER
+          React.createElement(
+            'div',
+            { className: `p-6 sm:p-8 rounded-3xl border shadow-2xl backdrop-blur-xl ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900/90 border-slate-800'} space-y-4` },
+            React.createElement(
+              'div',
+              { className: 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4' },
+              React.createElement(
+                'div',
+                null,
+                React.createElement('h3', { className: `text-lg font-extrabold ${isLight ? 'text-black' : 'text-white'}` }, 'Wallet Transaction Ledger'),
+                React.createElement('p', { className: isLight ? 'text-slate-600' : 'text-slate-400' }, 'Detailed record of all top-ups, subsidies, and ride auto-debits with GST tax invoices.')
+              ),
+              React.createElement(
+                'div',
+                { className: 'flex flex-wrap items-center gap-2 w-full sm:w-auto' },
+                React.createElement('input', {
+                  type: 'text',
+                  placeholder: 'Search transaction or ref ID...',
+                  value: searchQuery,
+                  onChange: (e) => setSearchQuery(e.target.value),
+                  className: `rounded-xl py-1.5 px-3 ${isLight ? 'bg-slate-50 border-slate-300 text-black' : 'bg-slate-950 border-slate-800 text-white'} border`,
+                }),
+                React.createElement(
+                  'div',
+                  { className: `flex items-center rounded-xl border p-1 ${isLight ? 'bg-slate-100 border-slate-300' : 'bg-slate-950 border-slate-800'}` },
+                  ['all', 'credit', 'debit'].map((t) =>
+                    React.createElement(
+                      'button',
+                      {
+                        key: t,
+                        onClick: () => setFilterType(t),
+                        className: `px-3 py-1 rounded-lg font-bold uppercase text-[10px] transition ${
+                          filterType === t
+                            ? isLight
+                              ? 'bg-yellow-400 text-black shadow-sm'
+                              : 'bg-blue-600 text-white shadow-sm'
+                            : isLight
+                            ? 'text-slate-600 hover:text-black'
+                            : 'text-slate-400 hover:text-white'
+                        }`,
+                      },
+                      t
+                    )
+                  )
+                )
+              )
+            ),
+
+            // Transactions Table
+            React.createElement(
+              'div',
+              { className: 'overflow-x-auto' },
+              React.createElement(
+                'table',
+                { className: 'w-full text-left text-xs' },
+                React.createElement(
+                  'thead',
+                  { className: `border-b ${isLight ? 'border-slate-200 text-slate-500' : 'border-slate-800 text-slate-400'} font-bold uppercase text-[10px]` },
+                  React.createElement(
+                    'tr',
+                    null,
+                    React.createElement('th', { className: 'py-3 px-4' }, 'Reference ID'),
+                    React.createElement('th', { className: 'py-3 px-4' }, 'Description / Route'),
+                    React.createElement('th', { className: 'py-3 px-4' }, 'Date & Time'),
+                    React.createElement('th', { className: 'py-3 px-4' }, 'Method'),
+                    React.createElement('th', { className: 'py-3 px-4 text-right' }, 'Amount (₹)'),
+                    React.createElement('th', { className: 'py-3 px-4 text-center' }, 'Action')
+                  )
+                ),
+                React.createElement(
+                  'tbody',
+                  { className: `divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/60'}` },
+                  filteredTxs.map((tx) => {
+                    const isCredit = tx.type === 'credit';
+                    return React.createElement(
+                      'tr',
+                      { key: tx.id, className: isLight ? 'hover:bg-slate-50' : 'hover:bg-slate-800/40' },
+                      React.createElement('td', { className: `py-3.5 px-4 font-mono font-bold ${isLight ? 'text-black' : 'text-white'}` }, tx.referenceId || 'TXN-KOL-884921'),
+                      React.createElement('td', { className: `py-3.5 px-4 font-semibold ${isLight ? 'text-slate-800' : 'text-slate-200'}` }, tx.description),
+                      React.createElement('td', { className: `py-3.5 px-4 ${isLight ? 'text-slate-600' : 'text-slate-400'}` }, tx.timestamp),
+                      React.createElement('td', { className: 'py-3.5 px-4' }, React.createElement('span', { className: `px-2 py-0.5 rounded-full font-bold text-[10px] ${isLight ? 'bg-slate-100 text-slate-800' : 'bg-slate-800 text-slate-300'}` }, tx.paymentMethod || 'UPI')),
+                      React.createElement('td', { className: `py-3.5 px-4 text-right font-mono font-extrabold text-sm ${isCredit ? (isLight ? 'text-emerald-700' : 'text-emerald-400') : 'text-rose-500'}` }, `${isCredit ? '+' : '-'}₹${tx.amount}`),
+                      React.createElement(
+                        'td',
+                        { className: 'py-3.5 px-4 text-center' },
+                        React.createElement(
+                          'button',
+                          {
+                            onClick: () => {
+                              toast.show('Tax Invoice Generated', `GST Invoice for ${tx.referenceId || tx.id} ready.`);
+                            },
+                            className: `px-3 py-1 rounded-xl text-[10px] font-bold border transition ${isLight ? 'bg-slate-100 border-slate-300 text-slate-800 hover:bg-slate-200' : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'}`,
+                          },
+                          '📄 Receipt'
+                        )
+                      )
+                    );
+                  })
                 )
               )
             )

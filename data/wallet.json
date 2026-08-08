@@ -1,0 +1,68 @@
+{
+  "walletBalance": 1800,
+  "corporateSubsidy": 5000,
+  "corporateSubsidyUsed": 1200,
+  "autoDebitEnabled": true,
+  "currency": "INR",
+  "lastUpdated": "2026-08-08T13:58:19.612Z",
+  "transactions": [
+    {
+      "id": "tx-1786197499612-989",
+      "type": "credit",
+      "amount": 550,
+      "baseAmount": 500,
+      "bonusAmount": 50,
+      "promoCode": "KOLKATA50",
+      "description": "Wallet Top-up via UPI (+₹50 Bonus)",
+      "paymentMethod": "UPI",
+      "timestamp": "8 Aug 2026, 7:28 pm",
+      "referenceId": "TXN-KOL-905222",
+      "status": "success",
+      "metadata": {
+        "upiId": "raj@okaxis",
+        "cardLast4": null,
+        "bankName": null
+      }
+    },
+    {
+      "id": "tx-init-1",
+      "type": "credit",
+      "amount": 1000,
+      "description": "Instant Wallet Top-up (UPI - GPay)",
+      "paymentMethod": "UPI",
+      "timestamp": "8 Aug 2026, 5:27 pm",
+      "referenceId": "TXN-KOL-884921",
+      "status": "success"
+    },
+    {
+      "id": "tx-init-2",
+      "type": "debit",
+      "amount": 120,
+      "description": "Ride Debit: Park Street to Sector V (Swift Dzire)",
+      "paymentMethod": "Wallet Auto-Debit",
+      "timestamp": "8 Aug 2026, 2:27 pm",
+      "referenceId": "TXN-KOL-651230",
+      "status": "success"
+    },
+    {
+      "id": "tx-init-3",
+      "type": "credit",
+      "amount": 500,
+      "description": "Odoo Enterprise Corporate Mobility Bonus",
+      "paymentMethod": "Corporate Voucher",
+      "timestamp": "7 Aug 2026, 7:27 pm",
+      "referenceId": "TXN-KOL-429910",
+      "status": "success"
+    },
+    {
+      "id": "tx-init-4",
+      "type": "debit",
+      "amount": 130,
+      "description": "Ride Debit: Bally Bridge to Sector V (Tata Nexon EV)",
+      "paymentMethod": "Wallet Auto-Debit",
+      "timestamp": "6 Aug 2026, 7:27 pm",
+      "referenceId": "TXN-KOL-119283",
+      "status": "success"
+    }
+  ]
+}
