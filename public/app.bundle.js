@@ -239,32 +239,22 @@
       const map = L.map(containerRef.current, { zoomControl: false, attributionControl: false }).setView(startC, 13);
       mapInstanceRef.current = map;
 
-      // Select Base Tile Layer based on chosen Map Type
+      // Select Base Tile Layer based on chosen Map Type with ultra-reliable Google Satellite & OSM CDNs
       if (mapType === 'satellite') {
-        // High-Resolution Esri World Imagery Satellite
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-          maxZoom: 19,
-        }).addTo(map);
-
-        // Transportation Roads Overlay on Satellite
-        L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
-          maxZoom: 19,
-          opacity: 0.85,
-        }).addTo(map);
-
-        // Boundary & City Labels Overlay on Satellite
-        L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-          maxZoom: 19,
-          opacity: 0.9,
+        // Google Satellite Hybrid (High-Resolution Satellite + Crisp Road Vectors + Labels)
+        L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+          maxZoom: 20,
+          subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
         }).addTo(map);
       } else if (mapType === 'traffic' || !isLight) {
-        // Dark Navigation Map with Illuminated Roads
+        // Dark Navigation Map with Illuminated Traffic Corridors
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
           maxZoom: 19,
+          subdomains: 'abcd',
         }).addTo(map);
       } else {
-        // Clean High-Contrast Street Map for Light Mode
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        // OpenStreetMap Standard / Carto Voyager
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19,
         }).addTo(map);
       }
