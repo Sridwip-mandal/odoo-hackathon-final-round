@@ -19,7 +19,6 @@ export function getDb() {
     rawDb.exec('PRAGMA foreign_keys = ON;');
     rawDb.exec('PRAGMA journal_mode = WAL;');
 
-    // Wrapper providing clean prepared statements and query helpers
     dbInstance = {
       raw: rawDb,
       exec(sql) {
@@ -65,7 +64,6 @@ export function getDb() {
   return dbInstance;
 }
 
-// Database Schema Initialization
 export function initSchema(db) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS employees (

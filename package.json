@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node server.mjs",
     "start": "node server.mjs",
-    "build": "echo 'Production ready'"
+    "build": "node build.mjs",
+    "seed": "node seed.mjs"
   },
   "dependencies": {
     "react": "^18.2.0",

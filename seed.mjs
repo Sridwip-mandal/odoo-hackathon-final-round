@@ -57,7 +57,6 @@ export async function runSeed() {
     { name: 'Admin User', email: 'admin@odoo.com', role: 'admin', dept: 'Executive Governance', mobile: '+91 98765 00001', empId: 'ADM-001', loc: 'Odoo HQ Sector V', manager: 'Board of Directors', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150', bal: 2500.0, access: 'granted', trips: 45 },
   ];
 
-  // Generate 37 additional realistic corporate employees to total 48
   const departments = ['Engineering', 'Sales & Marketing', 'Product & Design', 'Human Resources', 'Finance & Legal', 'Operations', 'Quality Assurance', 'Cloud Infrastructure'];
   const locations = [
     'Sector V, Salt Lake',
@@ -331,12 +330,10 @@ export async function runSeed() {
     VALUES (?, ?, ?, ?, ?, ?)
   `);
 
-  // Sample confirmed booking for Raj Patel on Ride 1
   bookStmt.run('bk-001', createdRides[0].id, createdEmployees[0].id, 'confirmed', 45.0, 1, 'Park Street Metro', 'Sector V Odoo HQ', new Date().toISOString());
   txStmt.run('tx-001', createdEmployees[0].id, 500.0, 'recharge', 'UPI Wallet Topup - Ref #UPI-994821', new Date().toISOString());
   txStmt.run('tx-002', createdEmployees[0].id, 45.0, 'fare', 'Carpool Commute - Park Street to Sector V', new Date().toISOString());
 
-  // Additional 8 corporate bookings to populate history & ESG metrics
   for (let b = 1; b < 8; b++) {
     const bkId = `bk-${String(b + 1).padStart(3, '0')}`;
     const r = createdRides[b % createdRides.length];
@@ -350,7 +347,6 @@ export async function runSeed() {
   console.log('✅ Seed completed successfully! All tables populated with realistic corporate mobility data.');
 }
 
-// Auto-run if executed directly
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   runSeed().catch(console.error);
 }

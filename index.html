@@ -135,10 +135,7 @@
   <body class="bg-slate-950 text-slate-100 antialiased min-h-screen overflow-x-hidden selection:bg-yellow-400 selection:text-black">
     <div id="root"></div>
 
-    <!-- Application scripts -->
-    <script src="/public/app.js"></script>
-    <script src="/public/app.bundle.js"></script>
-    <script src="/public/api-client.js"></script>
+    <!-- Single Unified Bundle Entry Point (Prevents React Double Mounting) -->
     <script src="/public/main.js"></script>
   </body>
 </html>

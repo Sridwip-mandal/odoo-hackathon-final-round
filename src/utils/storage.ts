@@ -263,51 +263,6 @@ export const storage = {
   getSettings: (): CompanySettings => storage.get<CompanySettings>(STORAGE_KEYS.SETTINGS, INITIAL_COMPANY_SETTINGS),
   setSettings: (settings: CompanySettings) => storage.set(STORAGE_KEYS.SETTINGS, settings),
 
-  // User Feedbacks
-  getFeedbacks: (): UserFeedback[] => {
-    return storage.get<UserFeedback[]>('carpool_feedbacks', [
-      {
-        id: 'fb-1',
-        userName: 'Priya Mukherjee',
-        userEmail: 'priya.m@odoo.com',
-        category: 'Ride Experience',
-        rating: 5,
-        route: 'Park Street → Sector V, Salt Lake',
-        comments: 'Extremely smooth commute along Maa Flyover. Car was clean and arrived on time!',
-        status: 'Resolved',
-        createdAt: 'Today, 10:45 AM',
-      },
-      {
-        id: 'fb-2',
-        userName: 'Sridwip Mandal',
-        userEmail: 'sridwip@odoo.com',
-        category: 'App Usability & Map',
-        rating: 5,
-        route: 'Howrah → New Town Kolkata',
-        comments: 'High-res satellite view and live GPS telemetry on Leaflet.js works wonderfully.',
-        status: 'Resolved',
-        createdAt: 'Yesterday, 04:30 PM',
-      },
-    ]);
-  },
-  addFeedback: (fb: UserFeedback) => {
-    const list = storage.getFeedbacks();
-    list.unshift(fb);
-    storage.set('carpool_feedbacks', list);
-    const currentUser = storage.getCurrentUser();
-    storage.addNotification({
-      id: `notif-${Date.now()}`,
-      userId: currentUser.id,
-      title: 'Feedback Received',
-      message: 'Thank you for sharing your feedback! Our mobility team is reviewing your response.',
-      time: 'Just now',
-      timestamp: Date.now(),
-      read: false,
-      type: 'system',
-      link: '/help-chat',
-    });
-  },
-
   // Monthly Summary
   getMonthlySummary: (): MonthlyFinancialSummary[] => storage.get<MonthlyFinancialSummary[]>(STORAGE_KEYS.MONTHLY_SUMMARY, INITIAL_MONTHLY_SUMMARY),
 
