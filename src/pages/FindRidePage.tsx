@@ -22,8 +22,8 @@ import { Ride } from '../types';
 export const FindRidePage: React.FC = () => {
   const navigate = useNavigate();
 
-  const [startLocation, setStartLocation] = useState('ISKCON Cross Road, Ahmedabad');
-  const [destinationLocation, setDestinationLocation] = useState('Infocity, Gandhinagar');
+  const [startLocation, setStartLocation] = useState('Park Street, Kolkata');
+  const [destinationLocation, setDestinationLocation] = useState('Sector V, Salt Lake, Kolkata');
   const [date, setDate] = useState('2026-07-18');
   const [time, setTime] = useState('07:00 PM');
   const [seats, setSeats] = useState(1);

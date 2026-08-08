@@ -1,34 +1,95 @@
-/* CARPOOL Enterprise Styling & Dark Theme Utilities */
+/* CARPOOL Enterprise Styling & Dark/Light Theme System */
 
 :root {
-  --color-slate-950: #080b11;
-  --color-slate-900: #0f172a;
-  --color-slate-850: #131d33;
-  --color-slate-800: #1e293b;
-  --color-blue-500: #3b82f6;
-  --color-purple-500: #a855f7;
-  --color-cyan-500: #06b6d4;
-  --color-emerald-500: #10b981;
+  --theme-bg: #080b11;
+  --theme-card: #0f172a;
+  --theme-border: #1e293b;
+  --theme-text: #f1f5f9;
+  --theme-text-muted: #94a3b8;
+  --theme-accent: #3b82f6;
+  --theme-accent-hover: #2563eb;
+  --theme-accent-glow: rgba(59, 130, 246, 0.25);
+  --color-yellow: #facc15;
+  --color-yellow-dark: #ca8a04;
+  --color-black: #09090b;
+  --color-gray-100: #f4f4f5;
+  --color-gray-200: #e4e4e7;
+  --color-gray-300: #d4d4d8;
+  --color-gray-700: #3f3f46;
+  --color-gray-800: #27272a;
+}
+
+/* Light Theme Variables: Yellow, Black, Gray, White */
+html.light, body.light {
+  --theme-bg: #f8fafc;
+  --theme-card: #ffffff;
+  --theme-border: #e2e8f0;
+  --theme-text: #09090b;
+  --theme-text-muted: #64748b;
+  --theme-accent: #eab308;
+  --theme-accent-hover: #ca8a04;
+  --theme-accent-glow: rgba(234, 179, 8, 0.35);
+  background-color: #f8fafc !important;
+  color: #09090b !important;
+}
+
+html.dark, body.dark {
+  --theme-bg: #080b11;
+  --theme-card: #0f172a;
+  --theme-border: #1e293b;
+  --theme-text: #f1f5f9;
+  --theme-text-muted: #94a3b8;
+  background-color: #080b11 !important;
+  color: #f1f5f9 !important;
 }
 
 body {
-  background-color: #080b11;
-  color: #f1f5f9;
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   margin: 0;
   padding: 0;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 /* Custom dark glassmorphism effects */
-.glass-card {
+.dark .glass-card {
   background: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(30, 41, 59, 0.8);
 }
 
+/* Custom light elegant effects (Yellow, Black, Gray, White) */
+.light .glass-card {
+  background: #ffffff;
+  border: 1px solid #e4e4e7;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+}
+
+.light .btn-yellow {
+  background: #facc15;
+  color: #09090b;
+  font-weight: 700;
+  border: 1px solid #eab308;
+  box-shadow: 0 4px 14px 0 rgba(234, 179, 8, 0.35);
+}
+
+.light .btn-yellow:hover {
+  background: #eab308;
+  color: #000000;
+}
+
+.light .badge-yellow {
+  background: #fef9c3;
+  color: #854d0e;
+  border: 1px solid #fde047;
+}
+
 .glow-blue {
   box-shadow: 0 0 35px -5px rgba(59, 130, 246, 0.3);
+}
+
+.glow-yellow {
+  box-shadow: 0 0 35px -5px rgba(234, 179, 8, 0.35);
 }
 
 .glow-purple {
@@ -48,3 +109,4 @@ body {
 .animate-pulse-subtle {
   animation: pulseSubtle 3s infinite ease-in-out;
 }
+

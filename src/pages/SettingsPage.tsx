@@ -58,7 +58,7 @@ export const SettingsPage: React.FC = () => {
       userId: user.id,
       label: newPlaceLabel,
       address: newPlaceAddress.trim(),
-      coords: [23.0276, 72.5074],
+      coords: [22.5510, 88.3524],
     };
     const updated = [...savedPlaces, newPlace];
     setSavedPlaces(updated);

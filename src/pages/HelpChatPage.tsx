@@ -45,7 +45,7 @@ export const HelpChatPage: React.FC = () => {
       } else if (q.toLowerCase().includes('cancellation') || q.toLowerCase().includes('cancel')) {
         reply = "Rides can be cancelled up to 15 minutes before scheduled departure with 100% instant refund directly back to your Carpool Corporate Wallet.";
       } else if (q.toLowerCase().includes('pickup') || q.toLowerCase().includes('stop')) {
-        reply = "You can add custom waypoints along the SG Highway / Gandhinagar corridor in the Notes section when publishing or booking your ride.";
+        reply = "You can add custom waypoints along the Kolkata EM Bypass / Sector V corridor in the Notes section when publishing or booking your ride.";
       }
 
       setMessages((prev) => [...prev, { sender: 'bot', text: reply, time }]);

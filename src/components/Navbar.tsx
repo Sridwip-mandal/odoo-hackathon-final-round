@@ -118,6 +118,32 @@ export const Navbar: React.FC<NavbarProps> = ({ currentUser, onRoleSwitch, onUse
             {/* Notifications Center */}
             <NotificationDropdown />
 
+            {/* Theme Toggle Button (Light/Dark) */}
+            <button
+              onClick={() => {
+                const currentTheme = localStorage.getItem('carpool_theme') || 'dark';
+                const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                localStorage.setItem('carpool_theme', nextTheme);
+                if (nextTheme === 'light') {
+                  document.documentElement.classList.remove('dark');
+                  document.documentElement.classList.add('light');
+                  document.body.classList.remove('dark');
+                  document.body.classList.add('light');
+                } else {
+                  document.documentElement.classList.remove('light');
+                  document.documentElement.classList.add('dark');
+                  document.body.classList.remove('light');
+                  document.body.classList.add('dark');
+                }
+                window.dispatchEvent(new CustomEvent('carpool_store_event', { detail: { key: 'carpool_theme', theme: nextTheme } }));
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-yellow-400/40 bg-yellow-400/10 text-yellow-400 hover:bg-yellow-400 hover:text-black transition text-xs font-bold shadow-sm"
+              title="Toggle Dark / Light Theme"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Theme</span>
+            </button>
+
             {/* Quick Role Switcher Pill */}
             <div className="hidden sm:flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1 text-xs">
               <button

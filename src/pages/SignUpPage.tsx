@@ -183,9 +183,10 @@ export const SignUpPage: React.FC = () => {
                   onChange={(e) => setOfficeLocation(e.target.value)}
                   className="w-full rounded-xl bg-slate-950 border border-slate-800 py-2.5 px-3.5 text-white focus:border-blue-500 focus:outline-none"
                 >
-                  <option value="Ahmedabad Tech Hub">Ahmedabad Tech Hub (SG Highway)</option>
-                  <option value="Gandhinagar Campus">Gandhinagar Campus (Infocity)</option>
-                  <option value="Ahmedabad Central">Ahmedabad Central (Vastrapur)</option>
+                  <option value="Kolkata Tech Hub (Sector V)">Kolkata Tech Hub (Sector V, Salt Lake)</option>
+                  <option value="Kolkata Central (Park Street)">Kolkata Central (Park Street)</option>
+                  <option value="New Town Campus (Action Area II)">New Town Campus (Action Area II)</option>
+                  <option value="New Town Corporate Headquarters">New Town Corporate Headquarters</option>
                 </select>
               </div>
             </div>

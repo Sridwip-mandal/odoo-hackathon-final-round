@@ -22,10 +22,10 @@ declare global {
 }
 
 export const LeafletMap: React.FC<LeafletMapProps> = ({
-  startCoords = [23.0276, 72.5074], // ISKCON Cross Road
-  destCoords = [23.1970, 72.6322], // Infocity Gandhinagar
-  startLocationName = 'ISKCON Cross Road, Ahmedabad',
-  destLocationName = 'Infocity, Gandhinagar',
+  startCoords = [22.5510, 88.3524], // Park Street, Kolkata
+  destCoords = [22.5804, 88.4378], // Sector V, Salt Lake, Kolkata
+  startLocationName = 'Park Street, Kolkata',
+  destLocationName = 'Sector V, Salt Lake, Kolkata',
   interactive = true,
   showVehicleSimulation = false,
   vehicleModel = 'Swift Dzire',
@@ -42,19 +42,19 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLeafletReady, setIsLeafletReady] = useState(false);
 
-  // Generate intermediate waypoint coordinates along SG Highway corridor
+  // Generate intermediate waypoint coordinates along Kolkata EM Bypass & Sector V corridor
   const generateRouteWaypoints = (start: [number, number], end: [number, number]) => {
     const waypoints: [number, number][] = [
       start,
-      [23.0450, 72.5180], // SG Highway - Thaltej
-      [23.0780, 72.5320], // SG Highway - Gota
-      [23.1120, 72.5540], // Vaishnodevi Circle
-      [23.1480, 72.5950], // Koba Circle
-      [23.1750, 72.6180], // Gandhinagar Bypass
+      [22.5448, 88.3920], // EM Bypass - Science City
+      [22.5690, 88.4050], // Chingrighata / EM Bypass
+      [22.5804, 88.4378], // Salt Lake Sector V (Tech Hub)
+      [22.5851, 88.4807], // New Town Eco Space
       end,
     ];
     return waypoints;
   };
+
 
   // Interpolate position along route
   const getInterpolatedPoint = (waypoints: [number, number][], progress: number): [number, number] => {

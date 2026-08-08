@@ -5,8 +5,8 @@ import { LeafletMap } from '../components/LeafletMap';
 
 export const RouteConfirmationPage: React.FC = () => {
   const navigate = useNavigate();
-  const [startLocation, setStartLocation] = useState('ISKCON Cross Road, Ahmedabad');
-  const [destLocation, setDestLocation] = useState('Infocity, Gandhinagar');
+  const [startLocation, setStartLocation] = useState('Park Street, Kolkata');
+  const [destLocation, setDestLocation] = useState('Sector V, Salt Lake, Kolkata');
 
   return (
     <div className="space-y-6 animate-fade-in max-w-5xl mx-auto">
@@ -19,7 +19,7 @@ export const RouteConfirmationPage: React.FC = () => {
           </div>
           <h1 className="text-2xl font-extrabold text-white mt-1">Route Confirmation & Telemetry</h1>
           <p className="text-xs text-slate-400">
-            Calculated high-efficiency trajectory along SG Highway / Gandhinagar Expressway
+            Calculated high-efficiency trajectory along Kolkata EM Bypass & Salt Lake Sector V Corridor
           </p>
         </div>
 

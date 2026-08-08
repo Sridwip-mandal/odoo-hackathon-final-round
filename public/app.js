@@ -6,7 +6,7 @@
   const ReactDOM = window.ReactDOM;
   const { useState, useEffect, useRef, useMemo, createContext, useContext } = React;
 
-  // --- Initial Mock Data ---
+  // --- Initial Mock Data: West Bengal Kolkata Corridors & Tech Hubs ---
   const INITIAL_USERS = [
     {
       id: 'usr-1',
@@ -16,7 +16,7 @@
       employeeId: 'EMP-1048',
       department: 'Engineering',
       manager: 'A. Shah',
-      officeLocation: 'Ahmedabad Tech Hub',
+      officeLocation: 'Kolkata Tech Hub (Sector V)',
       role: 'employee',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       platformAccess: 'granted',
@@ -33,7 +33,7 @@
       employeeId: 'EMP-1049',
       department: 'Sales',
       manager: 'R. Mehta',
-      officeLocation: 'Ahmedabad Central',
+      officeLocation: 'Kolkata Central (Park Street)',
       role: 'employee',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
       platformAccess: 'granted',
@@ -50,7 +50,7 @@
       employeeId: 'EMP-1050',
       department: 'Product',
       manager: 'A. Shah',
-      officeLocation: 'Gandhinagar Campus',
+      officeLocation: 'New Town Campus (Action Area II)',
       role: 'employee',
       avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
       platformAccess: 'granted',
@@ -67,7 +67,7 @@
       employeeId: 'EMP-1051',
       department: 'Design',
       manager: 'A. Shah',
-      officeLocation: 'Ahmedabad Tech Hub',
+      officeLocation: 'Kolkata Tech Hub (Sector V)',
       role: 'employee',
       avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
       platformAccess: 'granted',
@@ -84,7 +84,7 @@
       employeeId: 'ADM-0001',
       department: 'HR & Mobility Operations',
       manager: 'Executive Board',
-      officeLocation: 'Gandhinagar Headquarters',
+      officeLocation: 'New Town Corporate Headquarters',
       role: 'admin',
       avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
       platformAccess: 'granted',
@@ -101,7 +101,7 @@
       userId: 'usr-1',
       driverName: 'Raj Patel',
       model: 'Swift Dzire',
-      registrationNumber: 'GJ01AB1234',
+      registrationNumber: 'WB02AB1234',
       seatingCapacity: 4,
       vehicleType: 'Sedan',
       fuelType: 'Petrol',
@@ -113,7 +113,7 @@
       userId: 'usr-2',
       driverName: 'Krishna Singh',
       model: 'Alto 800',
-      registrationNumber: 'GJ01AB5034',
+      registrationNumber: 'WB06AB5034',
       seatingCapacity: 3,
       vehicleType: 'Hatchback',
       fuelType: 'Petrol',
@@ -125,7 +125,7 @@
       userId: 'usr-admin',
       driverName: 'Priya Nair',
       model: 'Innova Crysta',
-      registrationNumber: 'GJ01CD778',
+      registrationNumber: 'WB20CD778',
       seatingCapacity: 6,
       vehicleType: 'SUV',
       fuelType: 'Diesel',
@@ -137,7 +137,7 @@
       userId: 'usr-3',
       driverName: 'Swapnil Shaw',
       model: 'Tata Nexon EV',
-      registrationNumber: 'GJ01EV9921',
+      registrationNumber: 'WB06EV9921',
       seatingCapacity: 4,
       vehicleType: 'EV',
       fuelType: 'Electric',
@@ -149,7 +149,7 @@
       userId: 'usr-4',
       driverName: 'Bhavya',
       model: 'Honda City',
-      registrationNumber: 'GJ01CD7788',
+      registrationNumber: 'WB02CD7788',
       seatingCapacity: 4,
       vehicleType: 'Sedan',
       fuelType: 'Petrol',
@@ -167,21 +167,21 @@
       driverPhone: '+91 98765 43210',
       driverAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       vehicleModel: 'Swift Dzire',
-      registrationNumber: 'GJ01AB1234',
-      startLocation: 'ISKCON Cross Road, Ahmedabad',
-      destinationLocation: 'Infocity, Gandhinagar',
-      startCoords: [23.0276, 72.5074],
-      destCoords: [23.1970, 72.6322],
+      registrationNumber: 'WB02AB1234',
+      startLocation: 'Park Street, Kolkata',
+      destinationLocation: 'Sector V, Salt Lake, Kolkata',
+      startCoords: [22.5510, 88.3524],
+      destCoords: [22.5804, 88.4378],
       departureDate: '18/July/26',
       departureTime: '07:00 PM',
       availableSeats: 2,
       totalSeats: 4,
       farePerSeat: 120,
-      distanceKm: 24.2,
-      estimatedMinutes: 34,
+      distanceKm: 14.8,
+      estimatedMinutes: 28,
       isRecurring: true,
       recurringDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-      notes: 'AC On, Corporate ID mandatory, Pickups along SG Highway allowed',
+      notes: 'AC On, Corporate ID mandatory, Pickups along EM Bypass / Science City allowed',
       status: 'scheduled',
       createdAt: '2026-07-17T10:00:00Z',
     },
@@ -193,21 +193,21 @@
       driverPhone: '+91 98234 56789',
       driverAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
       vehicleModel: 'Alto 800',
-      registrationNumber: 'GJ01AB5034',
-      startLocation: 'ISKCON Cross Road, Ahmedabad',
-      destinationLocation: 'Adalaj Trimandir, Gandhinagar',
-      startCoords: [23.0276, 72.5074],
-      destCoords: [23.1667, 72.5833],
+      registrationNumber: 'WB06AB5034',
+      startLocation: 'Gariahat, Kolkata',
+      destinationLocation: 'Sector V, Salt Lake, Kolkata',
+      startCoords: [22.5186, 88.3653],
+      destCoords: [22.5804, 88.4378],
       departureDate: '18/July/26',
       departureTime: '08:00 PM',
       availableSeats: 2,
       totalSeats: 3,
       farePerSeat: 120,
-      distanceKm: 22.0,
+      distanceKm: 16.2,
       estimatedMinutes: 30,
       isRecurring: true,
       recurringDays: ['Mon', 'Wed', 'Fri'],
-      notes: 'Direct express route, minimal stops',
+      notes: 'Direct express route via EM Bypass, minimal stops',
       status: 'scheduled',
       createdAt: '2026-07-17T11:30:00Z',
     },
@@ -219,18 +219,18 @@
       driverPhone: '+91 97123 45678',
       driverAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
       vehicleModel: 'Tata Nexon EV',
-      registrationNumber: 'GJ01EV9921',
-      startLocation: 'Prahlad Nagar Garden, Ahmedabad',
-      destinationLocation: 'GIFT City Tower 1, Gandhinagar',
-      startCoords: [23.0120, 72.5110],
-      destCoords: [23.1585, 72.6854],
+      registrationNumber: 'WB06EV9921',
+      startLocation: 'Howrah Station, Kolkata',
+      destinationLocation: 'New Town Eco Space, Kolkata',
+      startCoords: [22.5958, 88.2636],
+      destCoords: [22.5851, 88.4807],
       departureDate: '19/July/26',
       departureTime: '08:30 AM',
       availableSeats: 3,
       totalSeats: 4,
       farePerSeat: 150,
-      distanceKm: 31.0,
-      estimatedMinutes: 42,
+      distanceKm: 21.5,
+      estimatedMinutes: 40,
       isRecurring: true,
       recurringDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
       notes: 'Zero emission green commute! Quiet ride, Wi-Fi hotspot available',
@@ -245,18 +245,18 @@
       driverPhone: '+91 99887 76655',
       driverAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
       vehicleModel: 'Honda City',
-      registrationNumber: 'GJ01CD7788',
-      startLocation: 'Vastrapur Lake, Ahmedabad',
-      destinationLocation: 'Infocity Supermarket, Gandhinagar',
-      startCoords: [23.0373, 72.5319],
-      destCoords: [23.1970, 72.6322],
+      registrationNumber: 'WB02CD7788',
+      startLocation: 'Shyambazar, Kolkata',
+      destinationLocation: 'Sector V, Salt Lake, Kolkata',
+      startCoords: [22.6030, 88.3713],
+      destCoords: [22.5804, 88.4378],
       departureDate: '19/July/26',
       departureTime: '09:00 AM',
       availableSeats: 2,
       totalSeats: 4,
       farePerSeat: 110,
-      distanceKm: 22.8,
-      estimatedMinutes: 32,
+      distanceKm: 12.8,
+      estimatedMinutes: 24,
       isRecurring: false,
       notes: 'Friendly music playlist, comfortable sedan',
       status: 'scheduled',
@@ -273,11 +273,11 @@
       driverPhone: '+91 98765 43210',
       driverRating: 4.9,
       vehicleModel: 'Swift Dzire',
-      registrationNumber: 'GJ01AB1234',
-      startLocation: 'ISKCON Cross Road',
-      destinationLocation: 'Infocity',
-      startCoords: [23.0276, 72.5074],
-      destCoords: [23.1970, 72.6322],
+      registrationNumber: 'WB02AB1234',
+      startLocation: 'Park Street',
+      destinationLocation: 'Sector V, Salt Lake',
+      startCoords: [22.5510, 88.3524],
+      destCoords: [22.5804, 88.4378],
       date: '18/July/26',
       time: '07:00 PM',
       fare: 120,
@@ -286,9 +286,21 @@
       status: 'active',
       paymentStatus: 'pending',
       paymentMethod: 'UPI',
-      currentLocation: [23.1100, 72.5700],
-      etaMinutes: 5,
-      distanceRemainingKm: 4.2,
+      currentLocation: [22.5690, 88.4050],
+      etaMinutes: 6,
+      distanceRemainingKm: 3.8,
+      passengers: [
+        {
+          passengerId: 'usr-2',
+          passengerName: 'Krishna Singh',
+          passengerPhone: '+91 98234 56789',
+          seatsBooked: 1,
+          pickupLocation: 'Park Street',
+          dropLocation: 'Sector V',
+          farePaid: 120,
+          paymentStatus: 'pending',
+        }
+      ]
     },
     {
       id: 'trip-hist-1',
@@ -298,11 +310,11 @@
       driverPhone: '+91 98765 43210',
       driverRating: 4.9,
       vehicleModel: 'Swift Dzire',
-      registrationNumber: 'GJ01AB1234',
-      startLocation: 'ISKCON to Infocity',
-      destinationLocation: 'Infocity',
-      startCoords: [23.0276, 72.5074],
-      destCoords: [23.1970, 72.6322],
+      registrationNumber: 'WB02AB1234',
+      startLocation: 'Park Street to Sector V',
+      destinationLocation: 'Sector V, Salt Lake',
+      startCoords: [22.5510, 88.3524],
+      destCoords: [22.5804, 88.4378],
       date: '18/July/26',
       time: '07:00 PM',
       fare: 120,
@@ -320,11 +332,11 @@
       driverPhone: '+91 98234 56789',
       driverRating: 4.8,
       vehicleModel: 'Alto 800',
-      registrationNumber: 'GJ01AB5034',
-      startLocation: 'ISKCON to Adalaj',
-      destinationLocation: 'Adalaj Trimandir',
-      startCoords: [23.0276, 72.5074],
-      destCoords: [23.1667, 72.5833],
+      registrationNumber: 'WB06AB5034',
+      startLocation: 'Gariahat to Sector V',
+      destinationLocation: 'Sector V, Salt Lake',
+      startCoords: [22.5186, 88.3653],
+      destCoords: [22.5804, 88.4378],
       date: '19/July/26',
       time: '09:00 PM',
       fare: 120,
@@ -353,7 +365,7 @@
       userId: 'usr-1',
       type: 'debit',
       amount: 120,
-      description: 'Fare payment for Trip to Infocity',
+      description: 'Fare payment for Trip to Salt Lake Sector V',
       timestamp: '18 Jul 2026, 07:45 PM',
       paymentMethod: 'Wallet',
       status: 'success',
@@ -364,7 +376,7 @@
       userId: 'usr-1',
       type: 'credit',
       amount: 1000,
-      description: 'Monthly Corporate Mobility Allowance',
+      description: 'Monthly Kolkata Corporate Mobility Allowance',
       timestamp: '01 Jul 2026, 09:00 AM',
       paymentMethod: 'NetBanking',
       status: 'success',
@@ -409,17 +421,41 @@
 
   const INITIAL_COMPANY_SETTINGS = {
     companyName: 'Odoo Pvt. Ltd.',
-    registeredAddress: 'Gandhinagar Tech Park, Gujarat, India',
-    industry: 'Enterprise Software & Cloud',
+    registeredAddress: 'Sector V, Salt Lake, Kolkata, West Bengal - 700091, India',
+    industry: 'Enterprise Software & Cloud Mobility',
     adminContact: 'admin@odoo.com',
     totalEmployees: 48,
-    fuelCostPerLiter: 96.5,
-    costPerKm: 8.0,
-    travelCostOperational: 2.5,
-    defaultCarpoolingPolicy: 'Mandatory ID verification, min 2 passengers per pooled trip, full CO2 reduction credits to employee score.',
+    fuelCostPerLiter: 106.03,
+    costPerKm: 8.50,
+    travelCostOperational: 2.50,
+    defaultCarpoolingPolicy: 'Mandatory ID verification, min 2 passengers per pooled trip, full CO2 reduction credits to employee sustainability score.',
     maxSeatsPerRide: 6,
     autoApproveVehicles: true,
   };
+
+  const INITIAL_SAVED_PLACES = [
+    {
+      id: 'sp-1',
+      userId: 'usr-1',
+      label: 'Home',
+      address: 'Park Street, Kolkata - 700016',
+      coords: [22.5510, 88.3524],
+    },
+    {
+      id: 'sp-2',
+      userId: 'usr-1',
+      label: 'Office',
+      address: 'Sector V Tech Tower, Salt Lake, Kolkata - 700091',
+      coords: [22.5804, 88.4378],
+    },
+    {
+      id: 'sp-3',
+      userId: 'usr-1',
+      label: 'Gym',
+      address: 'Gariahat Club, Kolkata - 700019',
+      coords: [22.5186, 88.3653],
+    },
+  ];
 
   const INITIAL_MONTHLY_SUMMARY = [
     { month: 'Jan', revenue: 170000, fuelCost: 60000, maintenance: 20000, netProfit: 90000, ridesCount: 142, co2SavedKg: 1850 },
@@ -430,6 +466,7 @@
     { month: 'Jun', revenue: 245000, fuelCost: 78000, maintenance: 23000, netProfit: 144000, ridesCount: 205, co2SavedKg: 2790 },
     { month: 'Jul', revenue: 260000, fuelCost: 82000, maintenance: 25000, netProfit: 153000, ridesCount: 218, co2SavedKg: 2940 },
   ];
+
 
   // --- LocalStorage Store ---
   const store = {
@@ -503,9 +540,28 @@
     getSummary() {
       return store.get('cp_summary', INITIAL_MONTHLY_SUMMARY);
     },
+    getTheme() {
+      return localStorage.getItem('carpool_theme') || 'dark';
+    },
+    setTheme(t) {
+      localStorage.setItem('carpool_theme', t);
+      if (t === 'light') {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('light');
+        document.body.classList.remove('dark');
+        document.body.classList.add('light');
+      } else {
+        document.documentElement.classList.remove('light');
+        document.documentElement.classList.add('dark');
+        document.body.classList.remove('light');
+        document.body.classList.add('dark');
+      }
+      window.dispatchEvent(new CustomEvent('carpool_store_event', { detail: { key: 'carpool_theme', theme: t } }));
+    },
   };
 
   store.init();
+
 
   // --- SVG Icons Helper ---
   function Icon({ name, className = 'w-4 h-4' }) {

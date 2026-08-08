@@ -7,27 +7,32 @@
 [![Leaflet](https://img.shields.io/badge/Leaflet-Maps-199900.svg)](https://leafletjs.com/)
 [![License](https://img.shields.io/badge/License-Proprietary-purple.svg)]()
 
-CARPOOL is an enterprise-grade carpooling and corporate mobility platform built for **Odoo Pvt. Ltd.** to coordinate secure shared commutes along major corporate transit corridors in Gujarat (ISKCON Cross Road, SG Highway, Vaishnodevi Circle, Koba Circle, Adalaj Trimandir, GIFT City, and Infocity Gandhinagar).
+CARPOOL is an enterprise-grade carpooling and corporate mobility platform built for **Odoo Pvt. Ltd.** to coordinate secure shared commutes along major corporate transit corridors in **Kolkata, West Bengal** (Park Street, Salt Lake Sector V, EM Bypass, Science City, Chingrighata, Howrah, and New Town Rajarhat).
 
 ---
 
 ## 🌟 Key Features
 
-### 👤 1. Employee Portal
+### 🎨 1. Dual Elegant Theme System (Dark & Light)
+- **Dark Mode**: Sleek midnight slate (`#080b11`), glowing electric cyan/emerald neon accents, dark glassmorphism, and CartoDB dark matter maps.
+- **Light Mode**: Crisp pure white canvas, rich bold black typography, delicate gray borders, and vibrant sunny yellow (`#facc15` & `#eab308`) action highlights and badges.
+- **Instant Theme Switcher**: Dedicated Theme toggle button in Employee Navbar, Admin Header, and Visual Theme Cards in Settings.
+
+### 👤 2. Employee Portal (Kolkata Transit Corridors)
 - **Interactive Dashboard**: Real-time KPI cards (Available Rides, Upcoming Trips, Total Trips, Wallet Balance), upcoming ride countdown banner, and fleet fuel economy charts.
-- **Find Ride & Route Matching**: Swap start & drop points, filter by seat count & recurring weekdays (Mon-Sun), and view route corridors on an interactive OpenStreetMap engine.
-- **Live GPS Trip Tracking**: Simulated real-time car movement along SG Highway, ETA countdown (*"Coming in 5 Minutes"*), in-trip driver chat, voice call simulation, SOS emergency alerts, and one-click fare settlement.
+- **Find Ride & Route Matching**: Swap start & drop points (Park Street, Sector V Salt Lake, Gariahat, Howrah, New Town), filter by seat count & recurring weekdays (Mon-Sun), and view route corridors on an interactive OpenStreetMap engine.
+- **Live GPS Trip Tracking**: Simulated real-time car movement along Kolkata EM Bypass, ETA countdown (*"Arriving at Pickup in ~5 Mins"*), in-trip driver chat, voice call simulation, SOS emergency alerts, and one-click fare settlement.
 - **Offer / Publish Rides**: Corporate drivers can publish empty seats with custom notes, vehicle selection, and fair per-seat pricing.
-- **Fleet & Vehicle Management**: Register vehicles (Swift Dzire, Alto 800, Innova Crysta, Tata Nexon EV, Honda City) with seating capacity and fuel types.
+- **Fleet & Vehicle Management**: Register vehicles (Swift Dzire, Alto 800, Innova Crysta, Tata Nexon EV, Honda City) with WB registration plates (`WB02AB1234`, `WB06AB5034`, `WB20CD778`, `WB06EV9921`, `WB02CD7788`).
 - **Corporate Mobility Wallet**: Balance tracking, recharge presets (₹100, ₹250, ₹500, ₹1000), dynamic UPI QR code generator, and transaction history.
 - **Ride History & Receipts**: Searchable completed journeys with detailed fare and itinerary breakdowns.
 - **AI Mobility Concierge**: Interactive corporate chatbot for safety policies, fuel tax reimbursement queries, and campus helpline contacts.
 
-### 🛡️ 2. Admin Governance Console
+### 🛡️ 3. Admin Governance Console
 - **Executive Mobility Analytics**: Total employees (48), registered fleet (22), monthly rides (163), and ESG carbon audit reports (2,940 kg CO₂ reduced).
 - **Employee Access Management**: Grant or revoke platform access (`[Granted]` / `[Revoked]`), search employee directory, and register new staff.
 - **Fleet Vehicle Approvals**: Approve or deactivate vehicles (`[Active]` / `[Inactive]`) and audit vehicle capacities.
-- **Mobility Pricing Configurations**: Set corporate fuel rate benchmarks (₹96.50/L, ₹8.00/km, ₹2.50/km operational travel cost) and corporate carpooling policy.
+- **Mobility Pricing Configurations**: Set corporate fuel rate benchmarks (₹106.03/L, ₹8.50/km, ₹2.50/km operational travel cost) and corporate carpooling policy.
 
 ---
 

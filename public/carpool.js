@@ -54,7 +54,7 @@
     );
   }
 
-  // --- Map Component using Leaflet ---
+  // --- Map Component using Leaflet for Kolkata Transit ---
   function MapView({ startName, destName, height = '380px', showSimulation = false }) {
     const mapRef = useRef(null);
 
@@ -62,43 +62,50 @@
       if (!mapRef.current || !window.L) return;
 
       const L = window.L;
-      const map = L.map(mapRef.current, { zoomControl: false }).setView([23.0276, 72.5074], 11);
+      const isLight = document.documentElement.classList.contains('light');
+      const map = L.map(mapRef.current, { zoomControl: false }).setView([22.5650, 88.4000], 12);
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      const tileUrl = isLight
+        ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+        : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+
+      L.tileLayer(tileUrl, {
         maxZoom: 19,
       }).addTo(map);
 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
+      // Kolkata Commute Waypoints
       const waypoints = [
-        [23.0276, 72.5074], // ISKCON
-        [23.0600, 72.5250], // SG Highway
-        [23.1100, 72.5600], // Vaishnodevi Circle
-        [23.1600, 72.6000], // Koba Circle
-        [23.1970, 72.6322], // Infocity
+        [22.5510, 88.3524], // Park Street
+        [22.5448, 88.3920], // EM Bypass - Science City
+        [22.5690, 88.4050], // Chingrighata / EM Bypass
+        [22.5804, 88.4378], // Salt Lake Sector V
+        [22.5851, 88.4807], // New Town Eco Space
       ];
 
-      L.polyline(waypoints, { color: '#3b82f6', weight: 5, opacity: 0.85 }).addTo(map);
+      L.polyline(waypoints, { color: isLight ? '#ca8a04' : '#38bdf8', weight: 5, opacity: 0.95 }).addTo(map);
 
       // Start Marker
-      const startHtml = `<div style="background:#10b981;width:24px;height:24px;border-radius:50%;border:3px solid #0f172a;box-shadow:0 4px 10px rgba(0,0,0,0.5);"></div>`;
-      L.marker([23.0276, 72.5074], {
+      const startBorder = isLight ? '#09090b' : '#0f172a';
+      const startHtml = `<div style="background:#10b981;width:24px;height:24px;border-radius:50%;border:3px solid ${startBorder};box-shadow:0 4px 10px rgba(0,0,0,0.5);"></div>`;
+      L.marker([22.5510, 88.3524], {
         icon: L.divIcon({ className: 's-pin', html: startHtml, iconSize: [24, 24], iconAnchor: [12, 12] }),
-      }).addTo(map).bindPopup(`<b style="color:#0f172a;">${startName || 'ISKCON'}</b>`);
+      }).addTo(map).bindPopup(`<b style="color:#0f172a;">${startName || 'Park Street, Kolkata'}</b>`);
 
       // Destination Marker
-      const destHtml = `<div style="background:#ef4444;width:24px;height:24px;border-radius:50%;border:3px solid #0f172a;box-shadow:0 4px 10px rgba(0,0,0,0.5);"></div>`;
-      L.marker([23.1970, 72.6322], {
+      const destHtml = `<div style="background:#ef4444;width:24px;height:24px;border-radius:50%;border:3px solid ${startBorder};box-shadow:0 4px 10px rgba(0,0,0,0.5);"></div>`;
+      L.marker([22.5804, 88.4378], {
         icon: L.divIcon({ className: 'd-pin', html: destHtml, iconSize: [24, 24], iconAnchor: [12, 12] }),
-      }).addTo(map).bindPopup(`<b style="color:#0f172a;">${destName || 'Infocity'}</b>`);
+      }).addTo(map).bindPopup(`<b style="color:#0f172a;">${destName || 'Sector V, Salt Lake, Kolkata'}</b>`);
 
       // Vehicle Marker if in live tracking
       if (showSimulation) {
-        const carHtml = `<div style="background:#2563eb;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 0 15px #3b82f6;">🚗</div>`;
-        const carMarker = L.marker([23.1100, 72.5600], {
+        const carHtml = `<div style="background:${isLight ? '#eab308' : '#2563eb'};color:${isLight ? '#000' : '#fff'};width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid ${isLight ? '#000' : '#fff'};box-shadow:0 0 15px rgba(234,179,8,0.7);font-size:14px;font-weight:bold;">🚗</div>`;
+        const carMarker = L.marker([22.5690, 88.4050], {
           icon: L.divIcon({ className: 'c-pin', html: carHtml, iconSize: [32, 32], iconAnchor: [16, 16] }),
         }).addTo(map);
-        carMarker.bindPopup(`<b style="color:#0f172a;">Live Vehicle: Swift Dzire (GJ01AB1234)</b>`);
+        carMarker.bindPopup(`<b style="color:#0f172a;">Live Vehicle: Swift Dzire (WB02AB1234) — EM Bypass</b>`);
       }
 
       map.fitBounds(L.polyline(waypoints).getBounds().pad(0.2));
@@ -106,9 +113,10 @@
       return () => map.remove();
     }, [startName, destName, showSimulation]);
 
+    const isLightContainer = document.documentElement.classList.contains('light');
     return React.createElement('div', {
       ref: mapRef,
-      className: 'w-full rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-2xl relative',
+      className: isLightContainer ? 'w-full rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-xl relative' : 'w-full rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-2xl relative',
       style: { height },
     });
   }

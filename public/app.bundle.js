@@ -141,48 +141,59 @@
     );
   }
 
-  // --- Leaflet OpenStreetMap View ---
-  function MapView({ startName = 'ISKCON Cross Road', destName = 'Infocity', height = '380px', showSimulation = false }) {
+  // --- Leaflet OpenStreetMap View for Kolkata & West Bengal Transit Corridors ---
+  function MapView({ startName = 'Park Street, Kolkata', destName = 'Sector V, Salt Lake, Kolkata', height = '380px', showSimulation = false }) {
     const containerRef = useRef(null);
 
     useEffect(() => {
       if (!containerRef.current || !window.L) return;
 
       const L = window.L;
-      const map = L.map(containerRef.current, { zoomControl: false, attributionControl: false }).setView([23.0276, 72.5074], 11);
+      const isLight = document.documentElement.classList.contains('light');
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      // Center map on Kolkata Central / Salt Lake corridor
+      const map = L.map(containerRef.current, { zoomControl: false, attributionControl: false }).setView([22.5650, 88.4000], 12);
+
+      // Select map tile provider based on theme
+      const tileUrl = isLight
+        ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+        : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+
+      L.tileLayer(tileUrl, {
         maxZoom: 19,
       }).addTo(map);
 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
+      // Kolkata Commute Waypoints: Park Street -> Science City -> Chingrighata -> Sector V -> New Town
       const waypoints = [
-        [23.0276, 72.5074], // ISKCON
-        [23.0600, 72.5250], // SG Highway
-        [23.1100, 72.5600], // Vaishnodevi Circle
-        [23.1600, 72.6000], // Koba Circle
-        [23.1970, 72.6322], // Infocity
+        [22.5510, 88.3524], // Park Street
+        [22.5448, 88.3920], // EM Bypass - Science City
+        [22.5690, 88.4050], // Chingrighata / EM Bypass
+        [22.5804, 88.4378], // Salt Lake Sector V (Tech Hub)
+        [22.5851, 88.4807], // New Town Eco Space
       ];
 
-      L.polyline(waypoints, { color: '#3b82f6', weight: 5, opacity: 0.9 }).addTo(map);
+      const polylineColor = isLight ? '#ca8a04' : '#38bdf8';
+      L.polyline(waypoints, { color: polylineColor, weight: 5, opacity: 0.95 }).addTo(map);
 
-      const startHtml = `<div style="background:#10b981;width:22px;height:22px;border-radius:50%;border:3px solid #0f172a;box-shadow:0 4px 10px rgba(0,0,0,0.5);"></div>`;
-      L.marker([23.0276, 72.5074], {
+      const startBorderColor = isLight ? '#09090b' : '#0f172a';
+      const startHtml = `<div style="background:#10b981;width:22px;height:22px;border-radius:50%;border:3px solid ${startBorderColor};box-shadow:0 4px 10px rgba(0,0,0,0.4);"></div>`;
+      L.marker([22.5510, 88.3524], {
         icon: L.divIcon({ className: 'spin', html: startHtml, iconSize: [22, 22], iconAnchor: [11, 11] }),
-      }).addTo(map).bindPopup(`<b style="color:#0f172a;">${startName}</b>`);
+      }).addTo(map).bindPopup(`<b>${startName}</b>`);
 
-      const destHtml = `<div style="background:#ef4444;width:22px;height:22px;border-radius:50%;border:3px solid #0f172a;box-shadow:0 4px 10px rgba(0,0,0,0.5);"></div>`;
-      L.marker([23.1970, 72.6322], {
+      const destHtml = `<div style="background:#e11d48;width:22px;height:22px;border-radius:50%;border:3px solid ${startBorderColor};box-shadow:0 4px 10px rgba(0,0,0,0.4);"></div>`;
+      L.marker([22.5804, 88.4378], {
         icon: L.divIcon({ className: 'dpin', html: destHtml, iconSize: [22, 22], iconAnchor: [11, 11] }),
-      }).addTo(map).bindPopup(`<b style="color:#0f172a;">${destName}</b>`);
+      }).addTo(map).bindPopup(`<b>${destName}</b>`);
 
       if (showSimulation) {
-        const carHtml = `<div style="background:#2563eb;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 0 15px #3b82f6;">🚗</div>`;
-        const carMarker = L.marker([23.1100, 72.5600], {
+        const carHtml = `<div style="background:${isLight ? '#eab308' : '#2563eb'};color:${isLight ? '#000' : '#fff'};width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid ${isLight ? '#000' : '#fff'};box-shadow:0 0 15px rgba(234,179,8,0.7);font-size:14px;font-weight:bold;">🚗</div>`;
+        const carMarker = L.marker([22.5690, 88.4050], {
           icon: L.divIcon({ className: 'cpin', html: carHtml, iconSize: [32, 32], iconAnchor: [16, 16] }),
         }).addTo(map);
-        carMarker.bindPopup(`<b style="color:#0f172a;">Live Fleet: Swift Dzire (GJ01AB1234)</b>`);
+        carMarker.bindPopup(`<b>Live Fleet: Swift Dzire (WB02AB1234) — EM Bypass</b>`);
       }
 
       map.fitBounds(L.polyline(waypoints).getBounds().pad(0.2));
@@ -190,15 +201,17 @@
       return () => map.remove();
     }, [startName, destName, showSimulation]);
 
+    const isLightContainer = document.documentElement.classList.contains('light');
     return React.createElement('div', {
       ref: containerRef,
-      className: 'w-full rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-2xl relative',
+      className: isLightContainer ? 'w-full rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-xl relative' : 'w-full rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-2xl relative',
       style: { height },
     });
   }
 
-  // --- SVG Charts ---
+  // --- SVG Charts with Theme Adaptive Palette ---
   function FuelTrendSvg() {
+    const isLight = document.documentElement.classList.contains('light');
     const pts = [
       { m: 'Jan', v: 14.5, y: 170 },
       { m: 'Feb', v: 15.2, y: 150 },
@@ -210,6 +223,11 @@
     ];
     const polylineStr = pts.map((p, i) => `${40 + i * 65},${p.y}`).join(' ');
 
+    const gridStroke = isLight ? '#e4e4e7' : '#1e293b';
+    const textFill = isLight ? '#71717a' : '#94a3b8';
+    const curveStroke = isLight ? '#eab308' : '#06b6d4';
+    const dotFill = isLight ? '#ca8a04' : '#06b6d4';
+
     return React.createElement(
       'svg',
       { viewBox: '0 0 480 210', className: 'w-full h-full' },
@@ -220,7 +238,7 @@
           y1: gy,
           x2: 450,
           y2: gy,
-          stroke: '#1e293b',
+          stroke: gridStroke,
           strokeDasharray: '3 3',
         })
       ),
@@ -229,18 +247,18 @@
         y1: 130,
         x2: 450,
         y2: 130,
-        stroke: '#64748b',
+        stroke: isLight ? '#a1a1aa' : '#64748b',
         strokeDasharray: '5 5',
         strokeWidth: 1.5,
       }),
       React.createElement(
         'text',
-        { x: 370, y: 124, fill: '#94a3b8', fontSize: 10, fontFamily: 'monospace' },
+        { x: 370, y: 124, fill: textFill, fontSize: 10, fontFamily: 'monospace' },
         'Target 16 km/L'
       ),
       React.createElement('polyline', {
         fill: 'none',
-        stroke: '#06b6d4',
+        stroke: curveStroke,
         strokeWidth: 3,
         points: polylineStr,
       }),
@@ -252,8 +270,8 @@
             cx: 40 + i * 65,
             cy: p.y,
             r: 5,
-            fill: '#06b6d4',
-            stroke: '#0f172a',
+            fill: dotFill,
+            stroke: isLight ? '#ffffff' : '#0f172a',
             strokeWidth: 2,
           }),
           React.createElement(
@@ -261,7 +279,7 @@
             {
               x: 40 + i * 65,
               y: p.y - 10,
-              fill: '#ffffff',
+              fill: isLight ? '#09090b' : '#ffffff',
               fontSize: 10,
               textAnchor: 'middle',
               fontFamily: 'monospace',
@@ -271,7 +289,7 @@
           ),
           React.createElement(
             'text',
-            { x: 40 + i * 65, y: 200, fill: '#64748b', fontSize: 11, textAnchor: 'middle' },
+            { x: 40 + i * 65, y: 200, fill: textFill, fontSize: 11, textAnchor: 'middle' },
             p.m
           )
         )
@@ -280,13 +298,16 @@
   }
 
   function CostliestVehiclesSvg() {
+    const isLight = document.documentElement.classList.contains('light');
     const bars = [
-      { name: 'Innova (GJ01CD778)', cost: '₹9.4k', w: 210, color: '#f43f5e' },
-      { name: 'Swift (GJ01AB1234)', cost: '₹6.2k', w: 150, color: '#fb923c' },
-      { name: 'City (GJ01CD7788)', cost: '₹5.9k', w: 140, color: '#facc15' },
-      { name: 'Alto (GJ01AB5034)', cost: '₹4.1k', w: 100, color: '#38bdf8' },
-      { name: 'Nexon EV (GJ01EV)', cost: '₹1.8k', w: 50, color: '#4ade80' },
+      { name: 'Innova (WB20CD778)', cost: '₹9.4k', w: 210, color: isLight ? '#e11d48' : '#f43f5e' },
+      { name: 'Swift (WB02AB1234)', cost: '₹6.2k', w: 150, color: isLight ? '#eab308' : '#fb923c' },
+      { name: 'City (WB02CD7788)', cost: '₹5.9k', w: 140, color: isLight ? '#facc15' : '#facc15' },
+      { name: 'Alto (WB06AB5034)', cost: '₹4.1k', w: 100, color: isLight ? '#71717a' : '#38bdf8' },
+      { name: 'Nexon EV (WB06EV)', cost: '₹1.8k', w: 50, color: isLight ? '#16a34a' : '#4ade80' },
     ];
+
+    const labelFill = isLight ? '#27272a' : '#cbd5e1';
 
     return React.createElement(
       'svg',
@@ -297,7 +318,7 @@
           { key: i, transform: `translate(0, ${22 + i * 36})` },
           React.createElement(
             'text',
-            { x: 10, y: 14, fill: '#cbd5e1', fontSize: 11, fontWeight: '500' },
+            { x: 10, y: 14, fill: labelFill, fontSize: 11, fontWeight: '600' },
             b.name
           ),
           React.createElement('rect', {
@@ -313,7 +334,7 @@
             {
               x: 180 + b.w,
               y: 15,
-              fill: '#ffffff',
+              fill: isLight ? '#09090b' : '#ffffff',
               fontSize: 11,
               fontFamily: 'monospace',
               fontWeight: 'bold',
@@ -325,7 +346,7 @@
     );
   }
 
-  console.log('CARPOOL Core bundle initialized');
+  console.log('CARPOOL Core bundle initialized for Kolkata & West Bengal Transit');
   window.CARPOOL_COMPONENTS = {
     MapView,
     FuelTrendSvg,
@@ -336,3 +357,4 @@
     useToast,
   };
 })();
+

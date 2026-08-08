@@ -35,8 +35,31 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ currentUser, onRoleSwi
           </NavLink>
         </div>
 
-        {/* Right: Quick Role Switcher, Notifications, Admin Profile */}
-        <div className="flex items-center gap-3">
+          {/* Theme Toggle Button */}
+          <button
+            onClick={() => {
+              const currentTheme = localStorage.getItem('carpool_theme') || 'dark';
+              const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+              localStorage.setItem('carpool_theme', nextTheme);
+              if (nextTheme === 'light') {
+                document.documentElement.classList.remove('dark');
+                document.documentElement.classList.add('light');
+                document.body.classList.remove('dark');
+                document.body.classList.add('light');
+              } else {
+                document.documentElement.classList.remove('light');
+                document.documentElement.classList.add('dark');
+                document.body.classList.remove('light');
+                document.body.classList.add('dark');
+              }
+              window.dispatchEvent(new CustomEvent('carpool_store_event', { detail: { key: 'carpool_theme', theme: nextTheme } }));
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-yellow-400/10 border border-yellow-400/40 text-yellow-400 hover:bg-yellow-400 hover:text-black transition text-xs font-bold shadow-sm"
+            title="Toggle Dark / Light Theme"
+          >
+            <span>Theme ☀️/🌙</span>
+          </button>
+
           <button
             onClick={() => onRoleSwitch('employee')}
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-950/70 border border-blue-500/30 text-blue-300 hover:bg-blue-900/60 hover:text-white transition text-xs font-semibold"

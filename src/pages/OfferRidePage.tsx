@@ -25,14 +25,14 @@ export const OfferRidePage: React.FC = () => {
   const currentUser = storage.getCurrentUser();
   const vehicles = storage.getVehicles().filter((v) => v.status === 'approved');
 
-  const [startLocation, setStartLocation] = useState('ISKCON Cross Road, Ahmedabad');
-  const [destinationLocation, setDestinationLocation] = useState('Infocity, Gandhinagar');
+  const [startLocation, setStartLocation] = useState('Park Street, Kolkata');
+  const [destinationLocation, setDestinationLocation] = useState('Sector V, Salt Lake, Kolkata');
   const [date, setDate] = useState('18/July/26');
   const [time, setTime] = useState('07:00 PM');
   const [selectedVehicleId, setSelectedVehicleId] = useState(vehicles[0]?.id || 'veh-1');
   const [seats, setSeats] = useState(2);
   const [farePerSeat, setFarePerSeat] = useState(120);
-  const [notes, setNotes] = useState('AC on, polite driving, pickups along SG Highway welcome');
+  const [notes, setNotes] = useState('AC on, polite driving, pickups along EM Bypass welcome');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectedVehicle = vehicles.find((v) => v.id === selectedVehicleId) || vehicles[0];
@@ -65,18 +65,18 @@ export const OfferRidePage: React.FC = () => {
         driverRating: currentUser.rating || 4.9,
         driverAvatar: currentUser.avatar,
         vehicleModel: selectedVehicle?.model || 'Swift Dzire',
-        registrationNumber: selectedVehicle?.registrationNumber || 'GJ01AB1234',
+        registrationNumber: selectedVehicle?.registrationNumber || 'WB02AB1234',
         startLocation,
         destinationLocation,
-        startCoords: [23.0276, 72.5074],
-        destCoords: [23.1970, 72.6322],
+        startCoords: [22.5510, 88.3524],
+        destCoords: [22.5804, 88.4378],
         departureDate: date,
         departureTime: time,
         availableSeats: seats,
         totalSeats: selectedVehicle?.seatingCapacity || 4,
         farePerSeat,
-        distanceKm: 24.2,
-        estimatedMinutes: 34,
+        distanceKm: 14.8,
+        estimatedMinutes: 28,
         isRecurring: true,
         recurringDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
         notes,
