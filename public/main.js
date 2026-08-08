@@ -174,6 +174,9 @@
     );
   };
   const DynamicQrCode = COMPONENTS.DynamicQrCode || function () { return React.createElement('div', { className: 'w-32 h-32 bg-slate-900 border border-slate-700 rounded-xl flex items-center justify-center font-mono text-xs' }, 'QR'); };
+  const ToastProvider = COMPONENTS.ToastProvider || function ({ children }) {
+    return React.createElement(React.Fragment, null, children);
+  };
   const useToast = COMPONENTS.useToast || function () {
     return {
       show: (title, msg, type = 'success') => {
