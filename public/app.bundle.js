@@ -7,8 +7,8 @@
   const { useState, useEffect, useRef, useMemo, createContext, useContext } = React;
 
   // Global store & helper reference
-  const CARPOOL = window.CARPOOL;
-  const store = CARPOOL.store;
+  const CARPOOL = window.CARPOOL || (window.CARPOOL = {});
+  const store = CARPOOL.store || (CARPOOL.store = {});
 
   // --- SVG Icons Helper ---
   function Icon({ name, className = 'w-4 h-4' }) {

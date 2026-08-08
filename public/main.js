@@ -3,11 +3,190 @@
 (function () {
   'use strict';
 
-  const React = window.React;
-  const ReactDOM = window.ReactDOM;
+  const React = window.React || (window.React = {});
+  const ReactDOM = window.ReactDOM || (window.ReactDOM = {});
   const { useState, useEffect, useRef } = React;
-  const store = window.CARPOOL.store;
-  const { MapView, FuelTrendSvg, CostliestVehiclesSvg, Icon, DynamicQrCode, ToastProvider, useToast } = window.CARPOOL_COMPONENTS;
+
+  // Safe global store fallback
+  const CARPOOL = window.CARPOOL || (window.CARPOOL = {});
+  const store = CARPOOL.store || (CARPOOL.store = {
+    getCurrentUser: () => {
+      try {
+        const u = localStorage.getItem('carpool_user');
+        if (u) return JSON.parse(u);
+      } catch (e) {}
+      return {
+        id: 'usr-1',
+        name: 'Raj Patel',
+        email: 'raj.patel@odoo.com',
+        mobile: '+91 98765 43210',
+        employeeId: 'EMP-1048',
+        department: 'Engineering',
+        manager: 'A. Shah',
+        officeLocation: 'Kolkata Tech Hub (Sector V)',
+        role: 'employee',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        platformAccess: 'granted',
+        status: 'active',
+        rating: 4.9,
+        totalTrips: 42,
+        walletBalance: 1850,
+      };
+    },
+    setCurrentUser: (u) => {
+      try { localStorage.setItem('carpool_user', JSON.stringify(u)); } catch (e) {}
+    },
+    getUsers: () => {
+      try {
+        const u = localStorage.getItem('carpool_users');
+        if (u) return JSON.parse(u);
+      } catch (e) {}
+      return [
+        { id: 'usr-1', name: 'Raj Patel', email: 'raj.patel@odoo.com', department: 'Engineering', officeLocation: 'Kolkata Tech Hub (Sector V)', role: 'employee', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', platformAccess: 'granted', rating: 4.9, walletBalance: 1850, totalTrips: 42 },
+        { id: 'usr-2', name: 'Krishna Singh', email: 'krishna.singh@odoo.com', department: 'Sales', officeLocation: 'Kolkata Central (Park Street)', role: 'employee', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', platformAccess: 'granted', rating: 4.8, walletBalance: 820, totalTrips: 38 },
+        { id: 'usr-3', name: 'Swapnil Shaw', email: 'swapnil.shaw@odoo.com', department: 'Engineering', officeLocation: 'New Town Campus (Action Area II)', role: 'admin', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', platformAccess: 'granted', rating: 5.0, walletBalance: 2450, totalTrips: 56 },
+      ];
+    },
+    setUsers: (u) => {
+      try { localStorage.setItem('carpool_users', JSON.stringify(u)); } catch (e) {}
+    },
+    getVehicles: () => {
+      try {
+        const v = localStorage.getItem('carpool_vehicles');
+        if (v) return JSON.parse(v);
+      } catch (e) {}
+      return [
+        { id: 'veh-1', model: 'Honda City i-VTEC', registrationNumber: 'WB02AB1234', driverName: 'Raj Patel', seatingCapacity: 4, fuelType: 'Petrol', status: 'approved', vehicleType: 'Sedan', color: 'Pearl White' },
+        { id: 'veh-2', model: 'Tata Nexon EV Max', registrationNumber: 'WB06CD5678', driverName: 'Krishna Singh', seatingCapacity: 4, fuelType: 'Electric', status: 'approved', vehicleType: 'EV', color: 'Teal Blue' },
+        { id: 'veh-3', model: 'Hyundai Creta SX', registrationNumber: 'WB20EF9012', driverName: 'Swapnil Shaw', seatingCapacity: 5, fuelType: 'Diesel', status: 'approved', vehicleType: 'SUV', color: 'Phantom Black' },
+      ];
+    },
+    setVehicles: (v) => {
+      try { localStorage.setItem('carpool_vehicles', JSON.stringify(v)); } catch (e) {}
+    },
+    getRides: () => {
+      try {
+        const r = localStorage.getItem('carpool_rides');
+        if (r) return JSON.parse(r);
+      } catch (e) {}
+      return [
+        { id: 'ride-1', driverName: 'Raj Patel', driverPhone: '+91 98765 43210', driverRating: 4.9, driverAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', vehicleModel: 'Honda City', registrationNumber: 'WB02AB1234', startLocation: 'Park Street, Kolkata', destinationLocation: 'Sector V, Salt Lake, Kolkata', departureDate: 'Today', departureTime: '08:30 AM', farePerSeat: 45, availableSeats: 3, status: 'active', recurringDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+        { id: 'ride-2', driverName: 'Krishna Singh', driverPhone: '+91 98234 56789', driverRating: 4.8, driverAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', vehicleModel: 'Tata Nexon EV', registrationNumber: 'WB06CD5678', startLocation: 'Howrah Station, Kolkata', destinationLocation: 'New Town Eco Space, Kolkata', departureDate: 'Today', departureTime: '09:00 AM', farePerSeat: 50, availableSeats: 2, status: 'upcoming', recurringDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+      ];
+    },
+    setRides: (r) => {
+      try { localStorage.setItem('carpool_rides', JSON.stringify(r)); } catch (e) {}
+    },
+    getTrips: () => {
+      try {
+        const t = localStorage.getItem('carpool_trips');
+        if (t) return JSON.parse(t);
+      } catch (e) {}
+      return [
+        { id: 'trip-1', rideId: 'ride-1', driverName: 'Raj Patel', driverPhone: '+91 98765 43210', driverRating: 4.9, vehicleModel: 'Honda City', registrationNumber: 'WB02AB1234', startLocation: 'Park Street, Kolkata', destinationLocation: 'Sector V, Salt Lake, Kolkata', date: 'Today', time: '08:30 AM', fare: 45, seatNumber: 'Seat 1', status: 'upcoming', paymentStatus: 'paid' },
+        { id: 'trip-2', rideId: 'ride-2', driverName: 'Krishna Singh', driverPhone: '+91 98234 56789', driverRating: 4.8, vehicleModel: 'Tata Nexon EV', registrationNumber: 'WB06CD5678', startLocation: 'Howrah Station, Kolkata', destinationLocation: 'New Town Eco Space, Kolkata', date: 'Yesterday', time: '09:00 AM', fare: 50, seatNumber: 'Seat 2', status: 'completed', paymentStatus: 'paid' },
+      ];
+    },
+    setTrips: (t) => {
+      try { localStorage.setItem('carpool_trips', JSON.stringify(t)); } catch (e) {}
+    },
+    getTxs: () => {
+      try {
+        const x = localStorage.getItem('carpool_transactions');
+        if (x) return JSON.parse(x);
+      } catch (e) {}
+      return [
+        { id: 'tx-1', type: 'credit', amount: 500, description: 'Razorpay Online Wallet Top-up (Payment ID: pay_init100)', timestamp: 'Today, 10:30 AM', paymentMethod: 'UPI', status: 'success', referenceId: 'REF-TOPUP100' },
+        { id: 'tx-2', type: 'debit', amount: 45, description: 'Carpool Fare: Park Street → Sector V Salt Lake', timestamp: 'Yesterday, 06:15 PM', paymentMethod: 'Wallet', status: 'success', referenceId: 'BK-TRIP45' },
+      ];
+    },
+    setTxs: (x) => {
+      try { localStorage.setItem('carpool_transactions', JSON.stringify(x)); } catch (e) {}
+    },
+    getSettings: () => {
+      try {
+        const s = localStorage.getItem('carpool_settings');
+        if (s) return JSON.parse(s);
+      } catch (e) {}
+      return { companyName: 'Odoo Pvt. Ltd. (Kolkata)', fuelCostPerLiter: 106.03, costPerKm: 8.50, operationalCostPerKm: 2.50 };
+    },
+    setSettings: (s) => {
+      try { localStorage.setItem('carpool_settings', JSON.stringify(s)); } catch (e) {}
+    },
+    getPaymentMethods: () => {
+      try {
+        const m = localStorage.getItem('carpool_payment_methods');
+        if (m) return JSON.parse(m);
+      } catch (e) {}
+      return [
+        { id: 'pm-1', type: 'Card', title: 'Corporate Visa Card', details: '•••• 4242 (Exp 12/29)', isDefault: true },
+        { id: 'pm-2', type: 'UPI', title: 'Corporate UPI Handle', details: 'raj.patel@okaxis', isDefault: false },
+      ];
+    },
+    setPaymentMethods: (m) => {
+      try { localStorage.setItem('carpool_payment_methods', JSON.stringify(m)); } catch (e) {}
+    },
+  });
+
+  const COMPONENTS = window.CARPOOL_COMPONENTS || (window.CARPOOL_COMPONENTS = {});
+  const MapView = COMPONENTS.MapView || function ({ startName, destName, height = '320px' }) {
+    const mapRef = useRef(null);
+    useEffect(() => {
+      if (!mapRef.current || !window.L) return;
+      try {
+        const map = window.L.map(mapRef.current).setView([22.5726, 88.3639], 12);
+        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+        window.L.marker([22.5510, 88.3524]).addTo(map).bindPopup('Park Street, Kolkata');
+        window.L.marker([22.5800, 88.4370]).addTo(map).bindPopup('Sector V, Salt Lake, Kolkata');
+        return () => map.remove();
+      } catch (e) {}
+    }, []);
+    return React.createElement('div', { ref: mapRef, style: { height, width: '100%' }, className: 'rounded-2xl overflow-hidden' });
+  };
+  const FuelTrendSvg = COMPONENTS.FuelTrendSvg || function () { return React.createElement('div', { className: 'h-32 flex items-center justify-center text-slate-500 font-mono text-xs' }, '📊 ESG Fleet Fuel Trend: -18.4% Net Emissions'); };
+  const CostliestVehiclesSvg = COMPONENTS.CostliestVehiclesSvg || function () { return React.createElement('div', { className: 'h-32 flex items-center justify-center text-slate-500 font-mono text-xs' }, '🚗 Fleet Utilization: 94.2% Shared Commute Efficiency'); };
+  const Icon = COMPONENTS.Icon || function ({ name, className = 'w-4 h-4' }) {
+    const svgs = {
+      car: 'M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2.1 10.9 2 11.1 2 11.4V16c0 .6.4 1 1 1h2 M7 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm10 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
+      search: 'm21 21-4.35-4.35M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0z',
+      calendar: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',
+      plus: 'M12 5v14M5 12h14',
+      clock: 'M12 6v6l4 2M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z',
+      wallet: 'M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1 M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4',
+      creditcard: 'M2 7h20M2 11h20M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',
+      settings: 'M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
+      chart: 'M3 3v18h18M18 17V9M13 17V5M8 17v-3',
+      history: 'M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8 M3 3v5h5M12 7v5l4 2',
+      bell: 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0',
+      user: 'M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
+      users: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+      shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
+      navigation: 'm3 11 19-9-9 19-2-8-8-2z',
+      arrowRight: 'M5 12h14M12 5l7 7-7 7',
+      arrowUpDown: 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
+      qrcode: 'M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM14 15h2v2h-2zM18 15h3v3h-3zM14 19h3v2h-3zM19 19h2v2h-2z',
+      banknote: 'M2 6h20v12H2z M12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z M6 12h.01 M18 12h.01',
+    };
+    return React.createElement(
+      'svg',
+      { className, fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', viewBox: '0 0 24 24' },
+      React.createElement('path', { d: svgs[name] || svgs.car })
+    );
+  };
+  const DynamicQrCode = COMPONENTS.DynamicQrCode || function () { return React.createElement('div', { className: 'w-32 h-32 bg-slate-900 border border-slate-700 rounded-xl flex items-center justify-center font-mono text-xs' }, 'QR'); };
+  const useToast = COMPONENTS.useToast || function () {
+    return {
+      show: (title, msg, type = 'success') => {
+        const toastEl = document.createElement('div');
+        toastEl.className = `fixed bottom-5 right-5 z-[999999] px-4 py-3 rounded-2xl shadow-2xl border text-xs font-semibold animate-fade-in ${
+          type === 'error' ? 'bg-rose-900 border-rose-500 text-white' : 'bg-slate-900 border-slate-700 text-white'
+        }`;
+        toastEl.innerHTML = `<div class="font-bold">${title}</div><div class="text-[11px] opacity-80 mt-0.5">${msg}</div>`;
+        document.body.appendChild(toastEl);
+        setTimeout(() => toastEl.remove(), 3500);
+      },
+    };
+  };
 
   // --- Router State Hook ---
   function useHashRouter() {
