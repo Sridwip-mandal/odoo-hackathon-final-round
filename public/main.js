@@ -1,5 +1,5 @@
 // CARPOOL Enterprise Mobility Platform - Master Application
-// Full Interactive Admin Employee & Vehicle Management, Dynamic Kolkata Geocoding, Clean QR Payments, Dual Theme
+// Full Interactive Admin Employee & Vehicle Management, Dynamic Kolkata Geolocation & Dual Theme
 (function () {
   'use strict';
 
@@ -117,9 +117,9 @@
     const [txs, setTxs] = useState(() => store.getTxs());
     const [settings, setSettings] = useState(() => store.getSettings());
 
-    // Dynamic Geolocation Search State for Find Ride
-    const [findStart, setFindStart] = useState('Park Street, Kolkata');
-    const [findDest, setFindDest] = useState('Sector V, Salt Lake, Kolkata');
+    // Interactive Dynamic Route Search State for Kolkata GPS
+    const [startLocation, setStartLocation] = useState('Park Street, Kolkata');
+    const [destLocation, setDestLocation] = useState('Sector V, Salt Lake, Kolkata');
 
     // Search and Filter states
     const [empSearch, setEmpSearch] = useState('');
@@ -656,7 +656,7 @@
       );
     };
 
-    // --- Admin Sidebar Navigation (Single Clean Navigation without duplicates) ---
+    // --- Admin Sidebar Navigation (Clean: 1 Single Section, No Redundant Add Buttons in Sidebar) ---
     const renderAdminSidebar = () => {
       const adminLinks = [
         { to: '/admin/dashboard', label: 'Dashboard', icon: 'car' },
@@ -773,7 +773,7 @@
         );
       }
 
-      // 2. Find Ride (Dynamic Geolocation & Live Map Binding)
+      // 2. Find Ride with Real-Time Reactive Kolkata GPS Geolocation
       if (route === '/find-ride') {
         return React.createElement(
           'div',
@@ -788,12 +788,12 @@
               React.createElement(
                 'div',
                 null,
-                React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-400'} block mb-1 font-semibold` }, 'Start Location (Origin - e.g. Bally, Howrah, Park Street)'),
+                React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-400'} block mb-1 font-semibold` }, 'Start Location (Kolkata Origin)'),
                 React.createElement('input', {
                   type: 'text',
-                  value: findStart,
-                  onChange: (e) => setFindStart(e.target.value),
-                  placeholder: 'Type start location...',
+                  value: startLocation,
+                  onChange: (e) => setStartLocation(e.target.value),
+                  placeholder: 'e.g. Bally, Howrah, Park Street, Gariahat, Dankuni...',
                   className: `w-full ${isLight ? 'bg-white border-slate-300 text-black focus:border-yellow-500' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl px-3.5 py-2.5 font-medium`,
                 })
               ),
@@ -803,9 +803,9 @@
                 React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-400'} block mb-1 font-semibold` }, 'Destination Location (Tech Hub / Campus)'),
                 React.createElement('input', {
                   type: 'text',
-                  value: findDest,
-                  onChange: (e) => setFindDest(e.target.value),
-                  placeholder: 'Type destination location...',
+                  value: destLocation,
+                  onChange: (e) => setDestLocation(e.target.value),
+                  placeholder: 'e.g. Sector V, Salt Lake, New Town Eco Space...',
                   className: `w-full ${isLight ? 'bg-white border-slate-300 text-black focus:border-yellow-500' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl px-3.5 py-2.5 font-medium`,
                 })
               )
@@ -820,7 +820,7 @@
             React.createElement(
               'button',
               {
-                onClick: () => toast.show('Route Refreshed', `Map updated for ${findStart} → ${findDest}`),
+                onClick: () => toast.show('Route Updated', `GPS telemetry recalculating route: ${startLocation} → ${destLocation}.`),
                 className: `w-full py-3.5 rounded-2xl ${isLight ? 'bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold border border-yellow-500 shadow-md' : 'bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-600/30'} text-sm`,
               },
               'Search Kolkata Commutes'
@@ -832,8 +832,8 @@
             React.createElement(
               'div',
               { className: 'lg:col-span-6 space-y-3' },
-              React.createElement('h3', { className: `text-sm font-bold ${isLight ? 'text-black' : 'text-white'}` }, `Interactive GPS Route: ${findStart} → ${findDest}`),
-              React.createElement(MapView, { startName: findStart, destName: findDest, height: '420px' })
+              React.createElement('h3', { className: `text-sm font-bold ${isLight ? 'text-black' : 'text-white'}` }, `Interactive GPS Route: ${startLocation.split(',')[0]} → ${destLocation.split(',')[0]}`),
+              React.createElement(MapView, { startName: startLocation, destName: destLocation, height: '420px' })
             ),
             React.createElement(
               'div',
@@ -1094,7 +1094,7 @@
                 ),
                 React.createElement(
                   'div',
-                  { className: `grid grid-cols-2 gap-2 p-3 rounded-xl ${isLight ? 'bg-slate-50 border border-slate-200 text-slate-700' : 'bg-slate-950 border-slate-800 text-slate-300'}` },
+                  { className: `grid grid-cols-2 gap-2 p-3 rounded-xl ${isLight ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-slate-950 border-slate-800 text-slate-300'}` },
                   React.createElement('div', null, React.createElement('span', { className: 'text-slate-400 block text-[10px]' }, 'Fuel Type'), React.createElement('span', { className: 'font-bold' }, v.fuelType)),
                   React.createElement('div', null, React.createElement('span', { className: 'text-slate-400 block text-[10px]' }, 'Capacity'), React.createElement('span', { className: 'font-bold' }, `${v.seatingCapacity} Seats`))
                 )
@@ -1105,7 +1105,7 @@
       }
 
       // 6. Settings Page (with Theme Switcher Card)
-      if (route === '/settings') {
+      if (route === '/settings' || route === '/admin/settings') {
         return React.createElement(
           'div',
           { className: 'space-y-6 animate-fade-in max-w-5xl mx-auto text-xs' },
@@ -1244,7 +1244,7 @@
                   'div',
                   { className: 'flex gap-2 pt-2' },
                   React.createElement('button', { onClick: () => navigate('/live-tracking'), className: `px-4 py-2 rounded-xl ${isLight ? 'bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold border border-yellow-500 shadow-sm' : 'bg-blue-600 text-white font-bold'}` }, 'Track Route'),
-                  React.createElement('button', { onClick: () => { setPaymentTrip(t); setShowPayment(true); }, className: `px-4 py-2 rounded-xl ${isLight ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-slate-800 text-slate-200'} border font-bold` }, 'Pay / Receipt')
+                  React.createElement('button', { onClick: () => { setPaymentTrip(t); setShowPayment(true); }, className: `px-4 py-2 rounded-xl ${isLight ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-slate-800 text-slate-200'} border font-bold` }, 'Receipt')
                 )
               )
             )
@@ -1256,7 +1256,7 @@
       // ADMIN CONSOLE PAGES
       // ==========================================
 
-      // ADMIN 1: Admin Employees Page (/admin/employees)
+      // ADMIN 1: Admin Employees Page (/admin/employees) - Single Clean Primary Header Button
       if (route === '/admin/employees') {
         const filteredUsers = users.filter((u) => {
           if (deptFilter !== 'all' && u.department !== deptFilter) return false;
@@ -1268,7 +1268,7 @@
         return React.createElement(
           'div',
           { className: 'space-y-6 animate-fade-in text-xs' },
-          // Header with SINGLE Primary Add Employee Button
+          // Header with Single Prominent Action Button
           React.createElement(
             'div',
             { className: 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4' },
@@ -1432,7 +1432,7 @@
         );
       }
 
-      // ADMIN 2: Admin Vehicles Page (/admin/vehicles)
+      // ADMIN 2: Admin Vehicles Page (/admin/vehicles) - Single Clean Primary Header Button
       if (route === '/admin/vehicles') {
         const filteredVehicles = vehicles.filter((v) => {
           if (!vehSearch) return true;
@@ -1443,7 +1443,7 @@
         return React.createElement(
           'div',
           { className: 'space-y-6 animate-fade-in text-xs' },
-          // Header with SINGLE Primary Add Vehicle Button
+          // Header with Single Prominent Action Button
           React.createElement(
             'div',
             { className: 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4' },
@@ -1670,7 +1670,7 @@
                 'button',
                 {
                   onClick: () => setShowAddVehicle(true),
-                  className: `px-4 py-2.5 rounded-xl ${isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-300 font-bold' : 'bg-slate-900 border border-slate-800 text-cyan-300 font-bold'} flex items-center gap-1.5`,
+                  className: `px-4 py-2.5 rounded-xl ${isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-300 font-bold' : 'bg-slate-900 border-slate-800 text-cyan-300 font-bold'} flex items-center gap-1.5`,
                 },
                 React.createElement(Icon, { name: 'car', className: 'w-4 h-4' }),
                 'Add Vehicle'
@@ -1703,7 +1703,7 @@
     // ==========================================
     return React.createElement(
       'div',
-      { className: `min-h-screen ${isLight ? 'bg-slate-50 text-slate-900' : 'bg-slate-950 text-slate-100'} flex flex-col transition-colors duration-300` },
+      { className: `min-h-screen ${isLight ? 'bg-slate-50 text-slate-900' : 'bg-slate-950 text-slate-100'} flex flex-col transition-colors duration-300 relative` },
       renderHeader(),
       React.createElement(
         'div',
@@ -1722,10 +1722,10 @@
       showAddEmp &&
         React.createElement(
           'div',
-          { className: `fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl text-xs animate-fade-in` },
+          { className: `fixed inset-0 z-[99999] flex items-center justify-center p-4 ${isLight ? 'bg-slate-900/60' : 'bg-slate-950/85'} backdrop-blur-md text-xs animate-fade-in` },
           React.createElement(
             'div',
-            { className: `w-full max-w-lg rounded-3xl border ${isLight ? 'bg-white border-slate-200 shadow-2xl text-slate-900' : 'bg-slate-900 border-slate-800 shadow-2xl text-white'} p-6 sm:p-8 space-y-4 max-h-[90vh] overflow-y-auto` },
+            { className: `relative z-[100000] w-full max-w-lg rounded-3xl border ${isLight ? 'bg-white border-slate-200 shadow-2xl text-slate-900' : 'bg-slate-900 border-slate-800 shadow-2xl text-white'} p-6 sm:p-8 space-y-4 max-h-[90vh] overflow-y-auto` },
             React.createElement(
               'div',
               { className: `flex justify-between items-center pb-3 border-b ${isLight ? 'border-slate-100' : 'border-slate-800'}` },
@@ -1735,7 +1735,7 @@
                 React.createElement('h3', { className: `text-lg font-extrabold ${isLight ? 'text-black' : 'text-white'}` }, 'Register New Corporate Employee'),
                 React.createElement('p', { className: isLight ? 'text-slate-500' : 'text-slate-400' }, 'Add staff member to Kolkata carpooling directory')
               ),
-              React.createElement('button', { onClick: () => setShowAddEmp(false), className: 'p-1 text-slate-400 hover:text-slate-600 font-bold' }, '✕')
+              React.createElement('button', { onClick: () => setShowAddEmp(false), className: 'p-1 text-slate-400 hover:text-slate-600 font-bold text-sm' }, '✕')
             ),
             React.createElement(
               'form',
@@ -1858,10 +1858,10 @@
       showAddVehicle &&
         React.createElement(
           'div',
-          { className: `fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl text-xs animate-fade-in` },
+          { className: `fixed inset-0 z-[99999] flex items-center justify-center p-4 ${isLight ? 'bg-slate-900/60' : 'bg-slate-950/85'} backdrop-blur-md text-xs animate-fade-in` },
           React.createElement(
             'div',
-            { className: `w-full max-w-lg rounded-3xl border ${isLight ? 'bg-white border-slate-200 shadow-2xl text-slate-900' : 'bg-slate-900 border-slate-800 shadow-2xl text-white'} p-6 sm:p-8 space-y-4 max-h-[90vh] overflow-y-auto` },
+            { className: `relative z-[100000] w-full max-w-lg rounded-3xl border ${isLight ? 'bg-white border-slate-200 shadow-2xl text-slate-900' : 'bg-slate-900 border-slate-800 shadow-2xl text-white'} p-6 sm:p-8 space-y-4 max-h-[90vh] overflow-y-auto` },
             React.createElement(
               'div',
               { className: `flex justify-between items-center pb-3 border-b ${isLight ? 'border-slate-100' : 'border-slate-800'}` },
@@ -1871,7 +1871,7 @@
                 React.createElement('h3', { className: `text-lg font-extrabold ${isLight ? 'text-black' : 'text-white'}` }, 'Register Corporate Fleet Vehicle'),
                 React.createElement('p', { className: isLight ? 'text-slate-500' : 'text-slate-400' }, 'Add vehicle to Kolkata mobility pool with West Bengal plate')
               ),
-              React.createElement('button', { onClick: () => setShowAddVehicle(false), className: 'p-1 text-slate-400 hover:text-slate-600 font-bold' }, '✕')
+              React.createElement('button', { onClick: () => setShowAddVehicle(false), className: 'p-1 text-slate-400 hover:text-slate-600 font-bold text-sm' }, '✕')
             ),
             React.createElement(
               'form',
@@ -1989,73 +1989,14 @@
           )
         ),
 
-      // ==========================================
-      // MODAL 3: CLEAN UPI / QR PAYMENT MODAL (Centered, High Z-Index, No Map Interference)
-      // ==========================================
-      showPayment &&
-        paymentTrip &&
-        React.createElement(
-          'div',
-          { className: 'fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl text-xs animate-fade-in' },
-          React.createElement(
-            'div',
-            { className: `relative z-10 w-full max-w-md rounded-3xl border ${isLight ? 'bg-white border-slate-200 shadow-2xl text-slate-900' : 'bg-slate-900 border-slate-800 shadow-2xl text-white'} p-8 space-y-5 text-center` },
-            React.createElement(
-              'div',
-              { className: 'flex justify-between items-center' },
-              React.createElement('span', { className: `text-[10px] font-bold uppercase tracking-wider ${isLight ? 'bg-yellow-100 text-yellow-900 px-2 py-0.5 rounded-md border border-yellow-300' : 'bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md border border-emerald-500/30'}` }, 'Instant UPI / Corporate Wallet'),
-              React.createElement('button', { onClick: () => setShowPayment(false), className: 'p-1 text-slate-400 hover:text-slate-600 font-bold text-sm' }, '✕')
-            ),
-            React.createElement(
-              'div',
-              { className: 'space-y-1' },
-              React.createElement('h3', { className: `text-2xl font-extrabold ${isLight ? 'text-black' : 'text-white'}` }, `Pay Driver ₹${paymentTrip.fare}`),
-              React.createElement('p', { className: isLight ? 'text-slate-600 text-xs' : 'text-slate-400 text-xs' }, `Scan QR or Auto-Debit for trip to ${paymentTrip.destinationLocation.split(',')[0]}`)
-            ),
-            // Central QR Code container
-            React.createElement(
-              'div',
-              { className: `p-4 rounded-3xl border ${isLight ? 'bg-slate-50 border-slate-200 shadow-inner' : 'bg-slate-950 border-slate-800 shadow-inner'} flex flex-col items-center justify-center` },
-              React.createElement(DynamicQrCode, { fare: paymentTrip.fare }),
-              React.createElement('span', { className: `mt-3 font-mono font-bold text-xs ${isLight ? 'text-slate-700 bg-white px-3 py-1 rounded-xl border border-slate-200' : 'text-cyan-300 bg-slate-900 px-3 py-1 rounded-xl border border-slate-800'}` }, 'UPI ID: raj.patel@okaxis')
-            ),
-            React.createElement(
-              'div',
-              { className: 'space-y-2' },
-              React.createElement(
-                'button',
-                {
-                  onClick: () => {
-                    const u = { ...currentUser, walletBalance: Math.max(0, currentUser.walletBalance - paymentTrip.fare) };
-                    store.setCurrentUser(u);
-                    setCurrentUser(u);
-                    toast.show('Payment Completed Successfully!', `₹${paymentTrip.fare} transferred to ${paymentTrip.driverName}.`);
-                    setShowPayment(false);
-                  },
-                  className: `w-full py-3.5 rounded-2xl ${isLight ? 'bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold border border-yellow-500 shadow-xl shadow-yellow-500/25' : 'bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-600/30'} text-sm transition`,
-                },
-                `Confirm Payment (₹${paymentTrip.fare})`
-              ),
-              React.createElement(
-                'button',
-                {
-                  onClick: () => setShowPayment(false),
-                  className: `w-full py-2 ${isLight ? 'text-slate-500 hover:text-black' : 'text-slate-400 hover:text-white'} font-semibold`,
-                },
-                'Cancel & Pay Later'
-              )
-            )
-          )
-        ),
-
       // --- Recharge Modal ---
       showRecharge &&
         React.createElement(
           'div',
-          { className: `fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl text-xs animate-fade-in` },
+          { className: `fixed inset-0 z-[99999] flex items-center justify-center p-4 ${isLight ? 'bg-slate-900/60' : 'bg-slate-950/85'} backdrop-blur-md text-xs animate-fade-in` },
           React.createElement(
             'div',
-            { className: `w-full max-w-md rounded-3xl border ${isLight ? 'bg-white border-slate-200 shadow-2xl text-slate-900' : 'bg-slate-900 border-slate-800 shadow-2xl text-white'} p-6 space-y-4` },
+            { className: `relative z-[100000] w-full max-w-md rounded-3xl border ${isLight ? 'bg-white border-slate-200 shadow-2xl text-slate-900' : 'bg-slate-900 border-slate-800 shadow-2xl text-white'} p-6 space-y-4` },
             React.createElement('h3', { className: `text-base font-bold ${isLight ? 'text-black' : 'text-white'}` }, 'Recharge Corporate Wallet'),
             React.createElement('input', { type: 'number', defaultValue: 500, className: `w-full ${isLight ? 'bg-slate-50 border-slate-300 text-black' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl p-3 font-mono text-lg font-bold` }),
             React.createElement(
@@ -2084,10 +2025,10 @@
       showSearch &&
         React.createElement(
           'div',
-          { className: `fixed inset-0 z-[999999] flex items-start justify-center pt-20 p-4 bg-black/80 backdrop-blur-xl text-xs animate-fade-in` },
+          { className: `fixed inset-0 z-[99999] flex items-start justify-center pt-20 p-4 ${isLight ? 'bg-slate-900/60' : 'bg-slate-950/85'} backdrop-blur-md text-xs animate-fade-in` },
           React.createElement(
             'div',
-            { className: `w-full max-w-xl rounded-3xl border ${isLight ? 'bg-white border-slate-200 shadow-2xl' : 'bg-slate-900 border-slate-800 shadow-2xl'} p-4 space-y-3` },
+            { className: `relative z-[100000] w-full max-w-xl rounded-3xl border ${isLight ? 'bg-white border-slate-200 shadow-2xl' : 'bg-slate-900 border-slate-800 shadow-2xl'} p-4 space-y-3` },
             React.createElement('input', {
               type: 'text',
               autoFocus: true,
@@ -2116,6 +2057,47 @@
               )
             ),
             React.createElement('button', { onClick: () => setShowSearch(false), className: `w-full py-2 text-center ${isLight ? 'text-slate-500' : 'text-slate-500'}` }, 'Close (Esc)')
+          )
+        ),
+
+      // ==========================================
+      // MODAL 3: PAYMENT VIA DYNAMIC QR & UPI (Z-INDEX PROTECTED)
+      // ==========================================
+      showPayment &&
+        paymentTrip &&
+        React.createElement(
+          'div',
+          { className: 'fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-xl animate-fade-in' },
+          React.createElement(
+            'div',
+            { className: `relative z-[100000] w-full max-w-sm rounded-3xl border shadow-2xl p-6 sm:p-8 space-y-4 text-center ${isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-white'}` },
+            React.createElement(
+              'div',
+              { className: 'flex justify-between items-center' },
+              React.createElement('span', { className: `text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${isLight ? 'bg-yellow-100 text-yellow-900 border border-yellow-300' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}` }, 'UPI / QR Checkout'),
+              React.createElement('button', { onClick: () => setShowPayment(false), className: 'text-slate-400 hover:text-slate-600 font-bold text-sm' }, '✕')
+            ),
+            React.createElement('h3', { className: `text-2xl font-extrabold font-mono ${isLight ? 'text-black' : 'text-white'}` }, `Pay Driver ₹${paymentTrip.fare}`),
+            React.createElement('p', { className: `text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}` }, `Scan with PhonePe, Google Pay, Paytm, or BHIM for trip to ${paymentTrip.destinationLocation.split(',')[0]}`),
+            React.createElement(DynamicQrCode, { fare: paymentTrip.fare, value: `upi://pay?pa=carpool.${paymentTrip.driverName.toLowerCase().replace(/\s+/g, '')}@okaxis&pn=${encodeURIComponent(paymentTrip.driverName)}&am=${paymentTrip.fare}&cu=INR` }),
+            React.createElement(
+              'div',
+              { className: `p-3 rounded-2xl border text-xs text-left space-y-1.5 ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'}` },
+              React.createElement('div', { className: 'flex justify-between' }, React.createElement('span', { className: 'text-slate-400' }, 'Driver UPI ID:'), React.createElement('span', { className: `font-mono font-bold ${isLight ? 'text-black' : 'text-cyan-300'}` }, `carpool.${paymentTrip.driverName.toLowerCase().replace(/\s+/g, '')}@okaxis`)),
+              React.createElement('div', { className: 'flex justify-between' }, React.createElement('span', { className: 'text-slate-400' }, 'Amount Payable:'), React.createElement('span', { className: 'font-mono font-extrabold text-emerald-500' }, `₹${paymentTrip.fare}`))
+            ),
+            React.createElement(
+              'button',
+              {
+                onClick: () => {
+                  toast.show('Payment Completed Successfully!', `₹${paymentTrip.fare} paid via UPI to ${paymentTrip.driverName}.`);
+                  setShowPayment(false);
+                },
+                className: `w-full py-3.5 rounded-2xl ${isLight ? 'bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold border border-yellow-500 shadow-lg shadow-yellow-500/25' : 'bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-600/30'} text-sm transition`,
+              },
+              'Confirm UPI / Wallet Payment'
+            ),
+            React.createElement('button', { onClick: () => setShowPayment(false), className: `w-full py-1 text-xs ${isLight ? 'text-slate-500 hover:text-black' : 'text-slate-400 hover:text-white'}` }, 'Cancel')
           )
         )
     );
