@@ -176,3 +176,15 @@ export interface MonthlyFinancialSummary {
   ridesCount: number;
   co2SavedKg: number;
 }
+
+export interface UserFeedback {
+  id: string;
+  userName: string;
+  userEmail: string;
+  category: 'Ride Experience' | 'App Usability & Map' | 'Driver / Passenger Rating' | 'Billing & UPI Payment' | 'Feature Request & Suggestion';
+  rating: number; // 1 to 5
+  route?: string;
+  comments: string;
+  status: 'Received' | 'Under Review' | 'Resolved';
+  createdAt: string;
+}

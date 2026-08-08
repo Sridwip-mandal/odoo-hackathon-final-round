@@ -1219,415 +1219,466 @@
         );
       }
 
-      // 8. Corporate Wallet & Instant Recharge Page (/wallet)
-      if (route === '/wallet') {
-        const totalCredits = txs.filter((t) => t.type === 'credit').reduce((acc, curr) => acc + (curr.amount || 0), 0);
-        const totalDebits = txs.filter((t) => t.type === 'debit').reduce((acc, curr) => acc + (curr.amount || 0), 0);
-
-        const filteredTxs = txs.filter((tx) => {
-          if (filterType !== 'all' && tx.type !== filterType) return false;
-          if (!searchQuery) return true;
-          const q = searchQuery.toLowerCase();
-          return (
-            (tx.description && tx.description.toLowerCase().includes(q)) ||
-            (tx.referenceId && tx.referenceId.toLowerCase().includes(q)) ||
-            (tx.paymentMethod && tx.paymentMethod.toLowerCase().includes(q))
-          );
-        });
-
-        const handleBackendRecharge = async (amt, method, promo) => {
-          try {
-            const resp = await fetch('/api/wallet/recharge', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ amount: amt, paymentMethod: method, promoCode: promo }),
-            });
-            const data = await resp.json();
-            if (data.success) {
-              const bonus = data.bonusAmount || 0;
-              const totalAdd = amt + bonus;
-              const u = { ...currentUser, walletBalance: currentUser.walletBalance + totalAdd };
-              store.setCurrentUser(u);
-              setCurrentUser(u);
-              const updatedTxs = [data.transaction, ...txs];
-              store.setTxs(updatedTxs);
-              setTxs(updatedTxs);
-              toast.show('Wallet Recharged! ⚡', `₹${amt}${bonus ? ` + ₹${bonus} bonus` : ''} added to your Carpool balance.`);
-            }
-          } catch (e) {
-            // Fallback
-            const u = { ...currentUser, walletBalance: currentUser.walletBalance + amt };
-            store.setCurrentUser(u);
-            setCurrentUser(u);
-            const fallbackTx = {
-              id: `tx-${Date.now()}`,
-              type: 'credit',
-              amount: amt,
-              description: `Wallet Top-up via ${method}`,
-              paymentMethod: method,
-              timestamp: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
-              referenceId: `TXN-KOL-${Math.floor(100000 + Math.random() * 900000)}`,
-              status: 'success',
-            };
-            const updated = [fallbackTx, ...txs];
-            store.setTxs(updated);
-            setTxs(updated);
-            toast.show('Wallet Recharged!', `₹${amt} added successfully.`);
-          }
-        };
-
+      // 7. My Trips Page
+      if (route === '/my-trips') {
         return React.createElement(
           'div',
-          { className: 'space-y-6 animate-fade-in text-xs max-w-6xl mx-auto' },
-          // Top Header
+          { className: 'space-y-6 animate-fade-in text-xs' },
+          React.createElement('h1', { className: `text-2xl font-extrabold ${isLight ? 'text-black' : 'text-white'}` }, 'My Commute Trips'),
           React.createElement(
             'div',
-            { className: 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4' },
-            React.createElement(
-              'div',
-              null,
-              React.createElement('h1', { className: `text-2xl sm:text-3xl font-extrabold ${isLight ? 'text-black' : 'text-white'} tracking-tight` }, 'Corporate Carpool Wallet'),
-              React.createElement('p', { className: isLight ? 'text-slate-600' : 'text-slate-400' }, 'Manage your balance, top-up via UPI / Cards, view corporate mobility subsidies, and download GST receipts.')
-            ),
-            React.createElement(
-              'div',
-              { className: 'flex items-center gap-2.5' },
-              React.createElement(
-                'button',
-                {
-                  onClick: () => navigate('/payment-methods'),
-                  className: `px-4 py-2.5 rounded-2xl border font-bold transition ${isLight ? 'bg-white border-slate-300 text-slate-800 hover:bg-slate-50' : 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white'}`,
-                },
-                'Saved Gateways →'
-              ),
-              React.createElement(
-                'button',
-                {
-                  onClick: () => setShowRecharge(true),
-                  className: `flex items-center gap-2 px-5 py-2.5 rounded-2xl ${isLight ? 'bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold border border-yellow-500 shadow-md' : 'bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-600/30'} transition hover:scale-105`,
-                },
-                React.createElement(Icon, { name: 'plus', className: 'w-4 h-4' }),
-                '⚡ Quick Recharge'
-              )
-            )
-          ),
-
-          // Main Wallet Balance & Corporate Allowance Cards
-          React.createElement(
-            'div',
-            { className: 'grid grid-cols-1 lg:grid-cols-3 gap-6' },
-            // Card 1: Live Available Balance (2 cols)
-            React.createElement(
-              'div',
-              {
-                className: `lg:col-span-2 relative overflow-hidden rounded-3xl border p-6 sm:p-8 shadow-2xl backdrop-blur-xl ${
-                  isLight
-                    ? 'bg-gradient-to-br from-white via-slate-50 to-yellow-50/50 border-slate-200'
-                    : 'bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border-slate-800'
-                }`,
-              },
+            { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
+            trips.map((t) =>
               React.createElement(
                 'div',
-                { className: 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6' },
+                { key: t.id, className: `p-6 rounded-3xl border ${isLight ? 'bg-white border-slate-200 shadow-xl' : 'bg-slate-900/90 border-slate-800 shadow-xl'} space-y-3` },
                 React.createElement(
                   'div',
-                  { className: 'space-y-2' },
-                  React.createElement(
-                    'div',
-                    { className: 'flex items-center gap-2' },
-                    React.createElement('span', { className: `text-xs font-bold uppercase tracking-wider ${isLight ? 'text-yellow-800' : 'text-emerald-400'}` }, 'Available Carpool Balance'),
-                    React.createElement('span', { className: `px-2 py-0.5 rounded-full text-[10px] font-extrabold ${isLight ? 'bg-yellow-200 text-yellow-950 border border-yellow-300' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}` }, '⚡ Auto-Debit Active')
-                  ),
-                  React.createElement('h2', { className: `text-4xl sm:text-5xl font-extrabold font-mono tracking-tight ${isLight ? 'text-black' : 'text-white'}` }, `₹ ${currentUser.walletBalance.toLocaleString()}`),
-                  React.createElement('p', { className: `text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}` }, 'Auto-debits securely on ride completion across Kolkata & West Bengal.')
+                  { className: 'flex justify-between items-center' },
+                  React.createElement('span', { className: `px-2 py-0.5 rounded-full font-bold uppercase text-[10px] ${t.status === 'completed' ? (isLight ? 'bg-slate-100 text-slate-800' : 'bg-slate-800 text-slate-300') : (isLight ? 'bg-yellow-100 text-yellow-900 border border-yellow-400 font-extrabold' : 'bg-emerald-500/20 text-emerald-300')}` }, t.status),
+                  React.createElement('span', { className: `font-mono font-bold text-sm ${isLight ? 'text-black' : 'text-white'}` }, `₹${t.fare}`)
                 ),
+                React.createElement('h3', { className: `font-extrabold text-base ${isLight ? 'text-black' : 'text-white'}` }, `${t.startLocation} → ${t.destinationLocation}`),
+                React.createElement('p', { className: isLight ? 'text-slate-600' : 'text-slate-400' }, `Driver: ${t.driverName} • ${t.date} at ${t.time}`),
                 React.createElement(
                   'div',
-                  { className: 'grid grid-cols-2 gap-3 font-mono text-xs w-full sm:w-auto' },
-                  React.createElement(
-                    'div',
-                    { className: `p-3.5 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-slate-950/80 border-slate-800'}` },
-                    React.createElement('span', { className: 'text-[10px] uppercase font-bold text-slate-500 block' }, 'Total Top-ups'),
-                    React.createElement('span', { className: `text-sm font-bold block mt-1 ${isLight ? 'text-emerald-700' : 'text-emerald-400'}` }, `+₹${totalCredits.toLocaleString()}`)
-                  ),
-                  React.createElement(
-                    'div',
-                    { className: `p-3.5 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-slate-950/80 border-slate-800'}` },
-                    React.createElement('span', { className: 'text-[10px] uppercase font-bold text-slate-500 block' }, 'Ride Expenses'),
-                    React.createElement('span', { className: 'text-sm font-bold text-rose-500 block mt-1' }, `-₹${totalDebits.toLocaleString()}`)
-                  )
-                )
-              )
-            ),
-
-            // Card 2: Corporate Mobility Subsidy (Odoo Allowance)
-            React.createElement(
-              'div',
-              {
-                className: `rounded-3xl border p-6 shadow-xl backdrop-blur-xl space-y-3 ${
-                  isLight ? 'bg-white border-slate-200' : 'bg-slate-900/90 border-slate-800'
-                }`,
-              },
-              React.createElement(
-                'div',
-                { className: 'flex justify-between items-center' },
-                React.createElement('span', { className: 'font-bold uppercase text-[10px] tracking-wider text-cyan-400' }, '🏢 Corporate Commute Quota'),
-                React.createElement('span', { className: `px-2 py-0.5 rounded-full text-[10px] font-bold ${isLight ? 'bg-slate-100 text-slate-800' : 'bg-cyan-500/20 text-cyan-300'}` }, 'Odoo Pvt. Ltd.')
-              ),
-              React.createElement('h3', { className: `text-2xl font-extrabold font-mono ${isLight ? 'text-black' : 'text-white'}` }, '₹ 3,800 / ₹5,000'),
-              React.createElement(
-                'div',
-                { className: `w-full h-2.5 rounded-full overflow-hidden ${isLight ? 'bg-slate-200' : 'bg-slate-950'}` },
-                React.createElement('div', { className: 'h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full', style: { width: '76%' } })
-              ),
-              React.createElement('p', { className: `text-[11px] ${isLight ? 'text-slate-600' : 'text-slate-400'}` }, 'Monthly mobility fuel & transit subsidy provided by Odoo West Bengal. Renews in 12 days.')
-            )
-          ),
-
-          // IN-PAGE INTERACTIVE RECHARGE STUDIO
-          React.createElement(
-            'div',
-            { className: `p-6 sm:p-8 rounded-3xl border shadow-2xl backdrop-blur-xl ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900/95 border-slate-800'} space-y-6` },
-            React.createElement(
-              'div',
-              { className: 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800/50 pb-4' },
-              React.createElement(
-                'div',
-                null,
-                React.createElement('h3', { className: `text-lg font-extrabold ${isLight ? 'text-black' : 'text-white'}` }, '⚡ Instant Wallet Recharge & Top-up'),
-                React.createElement('p', { className: isLight ? 'text-slate-600' : 'text-slate-400' }, 'Select an amount, pick your preferred gateway (UPI / Cards / Net Banking), apply coupons and recharge in 1-click.')
-              ),
-              React.createElement('span', { className: `px-3 py-1 rounded-xl text-xs font-mono font-bold ${isLight ? 'bg-yellow-100 text-yellow-900 border border-yellow-300' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}` }, 'Instant 0% Gateway Fee')
-            ),
-
-            React.createElement(
-              'form',
-              {
-                onSubmit: (e) => {
-                  e.preventDefault();
-                  const form = e.target;
-                  const amt = parseInt(form.recharge_amt.value) || 500;
-                  const meth = form.recharge_meth.value;
-                  const promo = form.recharge_promo.value.trim();
-                  handleBackendRecharge(amt, meth, promo);
-                },
-                className: 'space-y-5',
-              },
-              // 1. Preset Chips & Custom Input
-              React.createElement(
-                'div',
-                { className: 'space-y-2' },
-                React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-300'} font-bold uppercase tracking-wider text-[11px] block` }, 'Choose Recharge Amount (₹)'),
-                React.createElement(
-                  'div',
-                  { className: 'grid grid-cols-2 sm:grid-cols-5 gap-2.5' },
-                  [200, 500, 1000, 2000, 5000].map((val) =>
-                    React.createElement(
-                      'button',
-                      {
-                        key: val,
-                        type: 'button',
-                        onClick: (e) => {
-                          const input = e.currentTarget.closest('form').querySelector('input[name="recharge_amt"]');
-                          if (input) input.value = val;
-                        },
-                        className: `py-3 rounded-2xl font-mono font-bold text-sm border transition ${isLight ? 'bg-slate-50 hover:bg-yellow-100 border-slate-300 text-slate-900 hover:border-yellow-400' : 'bg-slate-950 hover:bg-slate-800 border-slate-800 text-slate-200 hover:border-slate-700'}`,
-                      },
-                      `+ ₹${val}`
-                    )
-                  )
-                ),
-                React.createElement(
-                  'div',
-                  { className: 'relative pt-2' },
-                  React.createElement('span', { className: 'absolute left-4 top-5 font-mono font-bold text-base text-slate-400' }, '₹'),
-                  React.createElement('input', {
-                    name: 'recharge_amt',
-                    type: 'number',
-                    defaultValue: 500,
-                    min: 10,
-                    max: 50000,
-                    required: true,
-                    className: `w-full rounded-2xl py-3 pl-9 pr-4 font-mono font-bold text-lg ${isLight ? 'bg-white border-slate-300 text-black focus:border-yellow-500' : 'bg-slate-950 border-slate-800 text-white focus:border-blue-500'} border focus:outline-none`,
-                  })
-                )
-              ),
-
-              // 2. Gateways & Payment Mode
-              React.createElement(
-                'div',
-                { className: 'grid grid-cols-1 sm:grid-cols-2 gap-4' },
-                React.createElement(
-                  'div',
-                  null,
-                  React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-300'} font-bold uppercase tracking-wider text-[11px] block mb-1.5` }, 'Payment Gateway / Mode *'),
-                  React.createElement(
-                    'select',
-                    {
-                      name: 'recharge_meth',
-                      className: `w-full rounded-2xl py-3 px-3.5 ${isLight ? 'bg-white border-slate-300 text-black' : 'bg-slate-950 border-slate-800 text-white'} border font-semibold`,
-                    },
-                    React.createElement('option', { value: 'UPI (GPay / PhonePe / Paytm)' }, '⚡ UPI (Google Pay, PhonePe, Paytm, BHIM)'),
-                    React.createElement('option', { value: 'Corporate Credit Card (Visa / Mastercard)' }, '💳 Corporate Credit / Debit Card (Visa, Mastercard, RuPay)'),
-                    React.createElement('option', { value: 'Net Banking (SBI / HDFC / ICICI)' }, '🏦 Net Banking (SBI, HDFC Bank, ICICI Bank, Axis)'),
-                    React.createElement('option', { value: 'Odoo Corporate Mobility Allowance' }, '🏢 Odoo Enterprise Mobility Allowance Voucher')
-                  )
-                ),
-                React.createElement(
-                  'div',
-                  null,
-                  React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-300'} font-bold uppercase tracking-wider text-[11px] block mb-1.5` }, 'Promo Code / Cashback Coupon'),
-                  React.createElement('input', {
-                    name: 'recharge_promo',
-                    type: 'text',
-                    placeholder: 'Enter KOLKATA50, ODOOFLEET, or CARPOOLWB',
-                    className: `w-full rounded-2xl py-3 px-3.5 uppercase font-mono font-bold ${isLight ? 'bg-white border-slate-300 text-black placeholder-slate-400' : 'bg-slate-950 border-slate-800 text-white placeholder-slate-600'} border`,
-                  })
-                )
-              ),
-
-              // Coupon Chips
-              React.createElement(
-                'div',
-                { className: 'flex flex-wrap items-center gap-2' },
-                React.createElement('span', { className: `text-[10px] uppercase font-bold ${isLight ? 'text-slate-500' : 'text-slate-400'}` }, 'Active Coupons:'),
-                ['KOLKATA50 (Flat ₹50 Bonus)', 'ODOOFLEET (₹100 Corporate Match)', 'CARPOOLWB (10% Cashback)'].map((c) =>
-                  React.createElement(
-                    'button',
-                    {
-                      key: c,
-                      type: 'button',
-                      onClick: (e) => {
-                        const promoInput = e.currentTarget.closest('form').querySelector('input[name="recharge_promo"]');
-                        if (promoInput) promoInput.value = c.split(' ')[0];
-                      },
-                      className: `px-2.5 py-1 rounded-xl text-[10px] font-mono font-bold border transition ${isLight ? 'bg-yellow-50 border-yellow-300 text-yellow-900 hover:bg-yellow-100' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20'}`,
-                    },
-                    `⚡ ${c}`
-                  )
-                )
-              ),
-
-              // Action Recharge Button
-              React.createElement(
-                'button',
-                {
-                  type: 'submit',
-                  className: `w-full py-4 rounded-2xl ${
-                    isLight
-                      ? 'bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold border border-yellow-500 shadow-xl shadow-yellow-500/30'
-                      : 'bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-xl shadow-emerald-600/30'
-                  } text-sm transition hover:scale-[1.01] flex items-center justify-center gap-2`,
-                },
-                React.createElement(Icon, { name: 'plus', className: 'w-4 h-4' }),
-                '⚡ Recharge Wallet Now'
-              )
-            )
-          ),
-
-          // TRANSACTION HISTORY & LEDGER
-          React.createElement(
-            'div',
-            { className: `p-6 sm:p-8 rounded-3xl border shadow-2xl backdrop-blur-xl ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900/90 border-slate-800'} space-y-4` },
-            React.createElement(
-              'div',
-              { className: 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4' },
-              React.createElement(
-                'div',
-                null,
-                React.createElement('h3', { className: `text-lg font-extrabold ${isLight ? 'text-black' : 'text-white'}` }, 'Wallet Transaction Ledger'),
-                React.createElement('p', { className: isLight ? 'text-slate-600' : 'text-slate-400' }, 'Detailed record of all top-ups, subsidies, and ride auto-debits with GST tax invoices.')
-              ),
-              React.createElement(
-                'div',
-                { className: 'flex flex-wrap items-center gap-2 w-full sm:w-auto' },
-                React.createElement('input', {
-                  type: 'text',
-                  placeholder: 'Search transaction or ref ID...',
-                  value: searchQuery,
-                  onChange: (e) => setSearchQuery(e.target.value),
-                  className: `rounded-xl py-1.5 px-3 ${isLight ? 'bg-slate-50 border-slate-300 text-black' : 'bg-slate-950 border-slate-800 text-white'} border`,
-                }),
-                React.createElement(
-                  'div',
-                  { className: `flex items-center rounded-xl border p-1 ${isLight ? 'bg-slate-100 border-slate-300' : 'bg-slate-950 border-slate-800'}` },
-                  ['all', 'credit', 'debit'].map((t) =>
-                    React.createElement(
-                      'button',
-                      {
-                        key: t,
-                        onClick: () => setFilterType(t),
-                        className: `px-3 py-1 rounded-lg font-bold uppercase text-[10px] transition ${
-                          filterType === t
-                            ? isLight
-                              ? 'bg-yellow-400 text-black shadow-sm'
-                              : 'bg-blue-600 text-white shadow-sm'
-                            : isLight
-                            ? 'text-slate-600 hover:text-black'
-                            : 'text-slate-400 hover:text-white'
-                        }`,
-                      },
-                      t
-                    )
-                  )
-                )
-              )
-            ),
-
-            // Transactions Table
-            React.createElement(
-              'div',
-              { className: 'overflow-x-auto' },
-              React.createElement(
-                'table',
-                { className: 'w-full text-left text-xs' },
-                React.createElement(
-                  'thead',
-                  { className: `border-b ${isLight ? 'border-slate-200 text-slate-500' : 'border-slate-800 text-slate-400'} font-bold uppercase text-[10px]` },
-                  React.createElement(
-                    'tr',
-                    null,
-                    React.createElement('th', { className: 'py-3 px-4' }, 'Reference ID'),
-                    React.createElement('th', { className: 'py-3 px-4' }, 'Description / Route'),
-                    React.createElement('th', { className: 'py-3 px-4' }, 'Date & Time'),
-                    React.createElement('th', { className: 'py-3 px-4' }, 'Method'),
-                    React.createElement('th', { className: 'py-3 px-4 text-right' }, 'Amount (₹)'),
-                    React.createElement('th', { className: 'py-3 px-4 text-center' }, 'Action')
-                  )
-                ),
-                React.createElement(
-                  'tbody',
-                  { className: `divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/60'}` },
-                  filteredTxs.map((tx) => {
-                    const isCredit = tx.type === 'credit';
-                    return React.createElement(
-                      'tr',
-                      { key: tx.id, className: isLight ? 'hover:bg-slate-50' : 'hover:bg-slate-800/40' },
-                      React.createElement('td', { className: `py-3.5 px-4 font-mono font-bold ${isLight ? 'text-black' : 'text-white'}` }, tx.referenceId || 'TXN-KOL-884921'),
-                      React.createElement('td', { className: `py-3.5 px-4 font-semibold ${isLight ? 'text-slate-800' : 'text-slate-200'}` }, tx.description),
-                      React.createElement('td', { className: `py-3.5 px-4 ${isLight ? 'text-slate-600' : 'text-slate-400'}` }, tx.timestamp),
-                      React.createElement('td', { className: 'py-3.5 px-4' }, React.createElement('span', { className: `px-2 py-0.5 rounded-full font-bold text-[10px] ${isLight ? 'bg-slate-100 text-slate-800' : 'bg-slate-800 text-slate-300'}` }, tx.paymentMethod || 'UPI')),
-                      React.createElement('td', { className: `py-3.5 px-4 text-right font-mono font-extrabold text-sm ${isCredit ? (isLight ? 'text-emerald-700' : 'text-emerald-400') : 'text-rose-500'}` }, `${isCredit ? '+' : '-'}₹${tx.amount}`),
-                      React.createElement(
-                        'td',
-                        { className: 'py-3.5 px-4 text-center' },
-                        React.createElement(
-                          'button',
-                          {
-                            onClick: () => {
-                              toast.show('Tax Invoice Generated', `GST Invoice for ${tx.referenceId || tx.id} ready.`);
-                            },
-                            className: `px-3 py-1 rounded-xl text-[10px] font-bold border transition ${isLight ? 'bg-slate-100 border-slate-300 text-slate-800 hover:bg-slate-200' : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'}`,
-                          },
-                          '📄 Receipt'
-                        )
-                      )
-                    );
-                  })
+                  { className: 'flex gap-2 pt-2' },
+                  React.createElement('button', { onClick: () => navigate('/live-tracking'), className: `px-4 py-2 rounded-xl ${isLight ? 'bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold border border-yellow-500 shadow-sm' : 'bg-blue-600 text-white font-bold'}` }, 'Track Route'),
+                  React.createElement('button', { onClick: () => { setPaymentTrip(t); setShowPayment(true); }, className: `px-4 py-2 rounded-xl ${isLight ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-slate-800 text-slate-200'} border font-bold` }, 'Receipt')
                 )
               )
             )
           )
+        );
+      }
+
+      // 8. Help, Support & User Feedback Page (/help-chat or /help-support)
+      if (route === '/help-chat' || route === '/help-support') {
+        const [feedbackTab, setFeedbackTab] = useState('feedback'); // 'feedback' | 'chat'
+        const [feedbackRating, setFeedbackRating] = useState(5);
+        const [feedbackHover, setFeedbackHover] = useState(0);
+        const [feedbackCat, setFeedbackCat] = useState('Ride Experience');
+        const [feedbackRoute, setFeedbackRoute] = useState('Park Street → Sector V, Salt Lake, Kolkata');
+        const [feedbackComments, setFeedbackComments] = useState('');
+        const [feedbackRecommend, setFeedbackRecommend] = useState(true);
+        const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+        const [feedbackList, setFeedbackList] = useState(
+          storage.getFeedbacks ? storage.getFeedbacks() : [
+            {
+              id: 'fb-1',
+              userName: 'Priya Mukherjee',
+              category: 'Ride Experience',
+              rating: 5,
+              route: 'Park Street → Sector V, Salt Lake',
+              comments: 'Extremely smooth commute along Maa Flyover. Car was clean and arrived on time!',
+              status: 'Resolved',
+              createdAt: 'Today, 10:45 AM',
+            },
+            {
+              id: 'fb-2',
+              userName: 'Sridwip Mandal',
+              category: 'App Usability & Map',
+              rating: 5,
+              route: 'Howrah → New Town Kolkata',
+              comments: 'High-res satellite view and live GPS telemetry on Leaflet.js works wonderfully.',
+              status: 'Resolved',
+              createdAt: 'Yesterday, 04:30 PM',
+            },
+          ]
+        );
+
+        const [chatMsgs, setChatMsgs] = useState([
+          { sender: 'bot', text: 'Hello! I am your Carpool Mobility Assistant. How can I assist you with your Kolkata commute, route navigation, or fuel reimbursement today?', time: '11:00 AM' }
+        ]);
+        const [chatInput, setChatInput] = useState('');
+
+        const handleSendChat = (txt) => {
+          const q = txt || chatInput;
+          if (!q || !q.trim()) return;
+          const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          setChatMsgs((prev) => [...prev, { sender: 'user', text: q, time }]);
+          setChatInput('');
+
+          setTimeout(() => {
+            let reply = "Thank you for reaching out. Our corporate mobility policy mandates that every verified passenger earns the driver ₹8.00/km in fuel tax credits.";
+            if (q.toLowerCase().includes('sos') || q.toLowerCase().includes('emergency')) {
+              reply = "In case of emergency during a live ride, click the red 'Emergency SOS' button on the Live Tracking screen. This immediately alerts the Security Operations Center.";
+            } else if (q.toLowerCase().includes('cancellation') || q.toLowerCase().includes('cancel')) {
+              reply = "Rides can be cancelled up to 15 minutes before departure with 100% instant refund back to your Carpool Corporate Wallet.";
+            } else if (q.toLowerCase().includes('pickup') || q.toLowerCase().includes('stop')) {
+              reply = "You can add custom waypoints along the Kolkata EM Bypass / Sector V corridor in the Notes section when booking or publishing your ride.";
+            }
+            setChatMsgs((prev) => [...prev, { sender: 'bot', text: reply, time }]);
+          }, 600);
+        };
+
+        const handleFeedbackSubmit = (e) => {
+          if (e) e.preventDefault();
+          if (!feedbackComments.trim()) {
+            setToast({ title: 'Required Field', message: 'Please provide a few words about your commute experience.', type: 'error' });
+            return;
+          }
+
+          const newFb = {
+            id: `fb-${Date.now()}`,
+            userName: currentUser.name || 'Priya Mukherjee',
+            category: feedbackCat,
+            rating: feedbackRating,
+            route: feedbackRoute,
+            comments: feedbackComments.trim(),
+            status: 'Received',
+            createdAt: 'Just now',
+          };
+
+          const updated = [newFb, ...feedbackList];
+          setFeedbackList(updated);
+          if (storage.addFeedback) storage.addFeedback(newFb);
+          setFeedbackComments('');
+          setFeedbackSubmitted(true);
+          setToast({ title: 'Feedback Submitted!', message: 'Thank you! Your feedback helps us enhance Kolkata corporate mobility.', type: 'success' });
+        };
+
+        return React.createElement(
+          'div',
+          { className: 'space-y-8 animate-fade-in text-xs max-w-6xl mx-auto' },
+          // Header & Tab Switcher
+          React.createElement(
+            'div',
+            { className: 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-6' },
+            React.createElement(
+              'div',
+              null,
+              React.createElement('h1', { className: `text-2xl sm:text-3xl font-extrabold ${isLight ? 'text-black' : 'text-white'}` }, 'Help, Support & User Feedback'),
+              React.createElement('p', { className: isLight ? 'text-slate-600' : 'text-slate-400' }, 'Share ride reviews, report transit feedback, or consult 24/7 AI mobility concierge.')
+            ),
+            React.createElement(
+              'div',
+              { className: `flex items-center gap-2 p-1 rounded-2xl border ${isLight ? 'bg-slate-100 border-slate-300' : 'bg-slate-900 border-slate-800'}` },
+              React.createElement(
+                'button',
+                {
+                  onClick: () => setFeedbackTab('feedback'),
+                  className: `px-4 py-2 rounded-xl font-bold flex items-center gap-1.5 transition ${
+                    feedbackTab === 'feedback'
+                      ? isLight ? 'bg-yellow-400 text-black shadow-md' : 'bg-blue-600 text-white shadow-lg'
+                      : isLight ? 'text-slate-700 hover:text-black' : 'text-slate-400 hover:text-white'
+                  }`,
+                },
+                '💬 User Feedback Form'
+              ),
+              React.createElement(
+                'button',
+                {
+                  onClick: () => setFeedbackTab('chat'),
+                  className: `px-4 py-2 rounded-xl font-bold flex items-center gap-1.5 transition ${
+                    feedbackTab === 'chat'
+                      ? isLight ? 'bg-yellow-400 text-black shadow-md' : 'bg-blue-600 text-white shadow-lg'
+                      : isLight ? 'text-slate-700 hover:text-black' : 'text-slate-400 hover:text-white'
+                  }`,
+                },
+                '✨ AI Concierge Chat'
+              )
+            )
+          ),
+
+          feedbackTab === 'feedback'
+            ? React.createElement(
+                'div',
+                { className: 'grid grid-cols-1 lg:grid-cols-12 gap-8' },
+                // Left: Feedback Form (7 Cols)
+                React.createElement(
+                  'div',
+                  { className: `lg:col-span-7 rounded-3xl border p-6 sm:p-8 space-y-6 shadow-2xl ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900/90 border-slate-800'}` },
+                  React.createElement(
+                    'div',
+                    { className: `flex items-center gap-3 border-b pb-4 ${isLight ? 'border-slate-200' : 'border-slate-800'}` },
+                    React.createElement('div', { className: 'w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg' }, '⭐'),
+                    React.createElement(
+                      'div',
+                      null,
+                      React.createElement('h3', { className: `text-base font-extrabold ${isLight ? 'text-black' : 'text-white'}` }, 'Submit User Ride & Platform Feedback'),
+                      React.createElement('p', { className: isLight ? 'text-slate-600' : 'text-slate-400' }, 'Rate your Kolkata carpooling commute, safety, driver etiquette, and app experience')
+                    )
+                  ),
+
+                  React.createElement(
+                    'form',
+                    { onSubmit: handleFeedbackSubmit, className: 'space-y-5' },
+                    // Star Rating Picker
+                    React.createElement(
+                      'div',
+                      { className: `p-4 rounded-2xl border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'} space-y-2` },
+                      React.createElement('label', { className: `text-xs font-bold uppercase tracking-wider block ${isLight ? 'text-slate-800' : 'text-slate-300'}` }, 'Overall Satisfaction Rating *'),
+                      React.createElement(
+                        'div',
+                        { className: 'flex items-center gap-2' },
+                        [1, 2, 3, 4, 5].map((star) =>
+                          React.createElement(
+                            'button',
+                            {
+                              key: star,
+                              type: 'button',
+                              onClick: () => setFeedbackRating(star),
+                              onMouseEnter: () => setFeedbackHover(star),
+                              onMouseLeave: () => setFeedbackHover(0),
+                              className: 'text-2xl transition transform hover:scale-125 focus:outline-none',
+                            },
+                            star <= (feedbackHover || feedbackRating) ? '⭐' : '☆'
+                          )
+                        ),
+                        React.createElement('span', { className: 'ml-3 font-mono font-extrabold text-sm text-yellow-500' },
+                          feedbackRating === 5 ? '⭐⭐⭐⭐⭐ 5.0 (Excellent)' : feedbackRating === 4 ? '⭐⭐⭐⭐ 4.0 (Good)' : feedbackRating === 3 ? '⭐⭐⭐ 3.0 (Average)' : feedbackRating === 2 ? '⭐⭐ 2.0 (Needs Improvement)' : '⭐ 1.0 (Poor)'
+                        )
+                      )
+                    ),
+
+                    // Feedback Category
+                    React.createElement(
+                      'div',
+                      { className: 'space-y-1.5' },
+                      React.createElement('label', { className: `text-xs font-bold uppercase tracking-wider block ${isLight ? 'text-slate-800' : 'text-slate-300'}` }, 'Feedback Category *'),
+                      React.createElement(
+                        'select',
+                        {
+                          value: feedbackCat,
+                          onChange: (e) => setFeedbackCat(e.target.value),
+                          className: `w-full rounded-2xl border px-4 py-3 font-medium focus:outline-none ${isLight ? 'bg-slate-50 border-slate-300 text-black' : 'bg-slate-950 border-slate-800 text-white'}`
+                        },
+                        React.createElement('option', { value: 'Ride Experience' }, '🚗 Ride Experience & Driving Comfort'),
+                        React.createElement('option', { value: 'App Usability & Map' }, '🛰️ Satellite Map & Live GPS Navigation Accuracy'),
+                        React.createElement('option', { value: 'Driver / Passenger Rating' }, '⭐ Driver & Co-Passenger Etiquette'),
+                        React.createElement('option', { value: 'Billing & UPI Payment' }, '💳 UPI, QR Code & Wallet Subsidies'),
+                        React.createElement('option', { value: 'Feature Request & Suggestion' }, '💡 Feature Suggestion & Platform Improvement')
+                      )
+                    ),
+
+                    // Route Input
+                    React.createElement(
+                      'div',
+                      { className: 'space-y-1.5' },
+                      React.createElement('label', { className: `text-xs font-bold uppercase tracking-wider block ${isLight ? 'text-slate-800' : 'text-slate-300'}` }, 'Commute Route / Transit Corridor'),
+                      React.createElement('input', {
+                        type: 'text',
+                        value: feedbackRoute,
+                        onChange: (e) => setFeedbackRoute(e.target.value),
+                        placeholder: 'e.g. Park Street → Sector V, Salt Lake, Kolkata',
+                        className: `w-full rounded-2xl border px-4 py-3 focus:outline-none ${isLight ? 'bg-slate-50 border-slate-300 text-black' : 'bg-slate-950 border-slate-800 text-white'}`
+                      })
+                    ),
+
+                    // Comments Textarea
+                    React.createElement(
+                      'div',
+                      { className: 'space-y-1.5' },
+                      React.createElement(
+                        'div',
+                        { className: 'flex justify-between items-center' },
+                        React.createElement('label', { className: `text-xs font-bold uppercase tracking-wider ${isLight ? 'text-slate-800' : 'text-slate-300'}` }, 'Detailed Feedback & Review *'),
+                        React.createElement('span', { className: 'text-[10px] text-slate-500 font-mono' }, `${feedbackComments.length}/500`)
+                      ),
+                      React.createElement('textarea', {
+                        rows: 4,
+                        maxLength: 500,
+                        required: true,
+                        value: feedbackComments,
+                        onChange: (e) => setFeedbackComments(e.target.value),
+                        placeholder: 'Tell us how your commute went or suggest improvements for Kolkata corporate carpooling...',
+                        className: `w-full rounded-2xl border p-4 focus:outline-none resize-none leading-relaxed ${isLight ? 'bg-slate-50 border-slate-300 text-black' : 'bg-slate-950 border-slate-800 text-white'}`
+                      })
+                    ),
+
+                    // Recommendation Checkbox
+                    React.createElement(
+                      'label',
+                      { className: `flex items-center gap-3 p-3.5 rounded-2xl border cursor-pointer ${isLight ? 'bg-slate-50 border-slate-200 text-slate-800' : 'bg-slate-950/60 border-slate-800 text-slate-300'}` },
+                      React.createElement('input', {
+                        type: 'checkbox',
+                        checked: feedbackRecommend,
+                        onChange: (e) => setFeedbackRecommend(e.target.checked),
+                        className: 'w-4 h-4 rounded text-blue-600 focus:ring-0'
+                      }),
+                      React.createElement('span', { className: 'font-medium' }, 'I would recommend this colleague driver / transit route to other team members.')
+                    ),
+
+                    // Submit Button
+                    React.createElement(
+                      'button',
+                      {
+                        type: 'submit',
+                        className: `w-full py-3.5 rounded-2xl font-extrabold text-sm shadow-xl flex items-center justify-center gap-2 transition hover:scale-[1.01] ${
+                          isLight
+                            ? 'bg-yellow-400 hover:bg-yellow-300 text-black border border-yellow-500 shadow-yellow-400/30'
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30'
+                        }`
+                      },
+                      '👍 Submit Feedback'
+                    )
+                  )
+                ),
+
+                // Right: Recent Submitted Feedbacks (5 Cols)
+                React.createElement(
+                  'div',
+                  { className: 'lg:col-span-5 space-y-6' },
+                  React.createElement(
+                    'div',
+                    { className: `p-6 rounded-3xl border shadow-xl space-y-4 ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900/90 border-slate-800'}` },
+                    React.createElement(
+                      'div',
+                      { className: `flex items-center justify-between border-b pb-3 ${isLight ? 'border-slate-200' : 'border-slate-800'}` },
+                      React.createElement('h3', { className: `font-bold text-xs ${isLight ? 'text-black' : 'text-white'}` }, 'Recent Employee Feedbacks'),
+                      React.createElement('span', { className: 'text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold' }, `${feedbackList.length} Submissions`)
+                    ),
+
+                    React.createElement(
+                      'div',
+                      { className: 'space-y-3.5 max-h-[380px] overflow-y-auto pr-1' },
+                      feedbackList.map((fb) =>
+                        React.createElement(
+                          'div',
+                          { key: fb.id, className: `p-4 rounded-2xl border space-y-2 ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'}` },
+                          React.createElement(
+                            'div',
+                            { className: 'flex justify-between items-start' },
+                            React.createElement(
+                              'div',
+                              null,
+                              React.createElement('span', { className: `font-extrabold block ${isLight ? 'text-black' : 'text-white'}` }, fb.userName),
+                              React.createElement('span', { className: isLight ? 'text-slate-500 text-[10px]' : 'text-slate-400 text-[10px]' }, fb.category)
+                            ),
+                            React.createElement(
+                              'div',
+                              { className: 'text-yellow-400 font-bold text-xs' },
+                              Array.from({ length: fb.rating }).map((_, idx) => '⭐').join('')
+                            )
+                          ),
+                          fb.route && React.createElement('div', { className: 'text-[11px] font-mono text-cyan-500 truncate font-semibold' }, `📍 ${fb.route}`),
+                          React.createElement('p', { className: `text-[11px] italic leading-relaxed ${isLight ? 'text-slate-700' : 'text-slate-300'}` }, `"${fb.comments}"`),
+                          React.createElement(
+                            'div',
+                            { className: `flex justify-between items-center pt-1 border-t ${isLight ? 'border-slate-200 text-slate-500' : 'border-slate-900 text-slate-500'} text-[10px]` },
+                            React.createElement('span', null, fb.createdAt),
+                            React.createElement('span', { className: 'px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' }, `✓ ${fb.status}`)
+                          )
+                        )
+                      )
+                    )
+                  ),
+
+                  // Help Desk contacts
+                  React.createElement(
+                    'div',
+                    { className: `p-6 rounded-3xl border shadow-xl space-y-3 ${isLight ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900/90 border-slate-800 text-slate-300'}` },
+                    React.createElement('h4', { className: `text-xs font-bold uppercase tracking-wider ${isLight ? 'text-black' : 'text-white'}` }, 'Mobility Help Desk Support'),
+                    React.createElement('div', { className: 'space-y-2' },
+                      React.createElement('p', { className: 'flex items-center gap-2' }, '📞 +91 33 4000 1234 (Kolkata Ext 804)'),
+                      React.createElement('p', { className: 'flex items-center gap-2 text-cyan-500 font-semibold' }, '✉️ kolkata-mobility@odoo.com'),
+                      React.createElement('p', { className: 'flex items-center gap-2' }, '🏢 Desk: Sector V SDF Building, Salt Lake Gate 2')
+                    )
+                  )
+                )
+              )
+            : // AI Chat Tab
+              React.createElement(
+                'div',
+                { className: 'grid grid-cols-1 lg:grid-cols-12 gap-8' },
+                React.createElement(
+                  'div',
+                  { className: `lg:col-span-7 rounded-3xl border shadow-2xl flex flex-col h-[560px] overflow-hidden ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900/90 border-slate-800'}` },
+                  React.createElement(
+                    'div',
+                    { className: `p-4 border-b flex items-center justify-between ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'}` },
+                    React.createElement(
+                      'div',
+                      { className: 'flex items-center gap-3' },
+                      React.createElement('div', { className: 'w-9 h-9 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold' }, '✨'),
+                      React.createElement(
+                        'div',
+                        null,
+                        React.createElement('h3', { className: `text-sm font-bold ${isLight ? 'text-black' : 'text-white'}` }, 'Carpool Concierge Bot'),
+                        React.createElement('span', { className: 'text-[10px] text-emerald-500 font-semibold' }, '• Live AI Active')
+                      )
+                    )
+                  ),
+
+                  React.createElement(
+                    'div',
+                    { className: `flex-1 overflow-y-auto p-4 space-y-3 text-xs ${isLight ? 'bg-slate-100/50' : 'bg-slate-950/40'}` },
+                    chatMsgs.map((m, i) =>
+                      React.createElement(
+                        'div',
+                        { key: i, className: `flex flex-col ${m.sender === 'user' ? 'items-end' : 'items-start'}` },
+                        React.createElement(
+                          'div',
+                          {
+                            className: `max-w-[82%] p-3.5 rounded-2xl leading-relaxed ${
+                              m.sender === 'user'
+                                ? 'bg-blue-600 text-white rounded-tr-none shadow-lg'
+                                : isLight ? 'bg-white text-slate-800 rounded-tl-none border border-slate-200 shadow-sm' : 'bg-slate-800 text-slate-200 rounded-tl-none border border-slate-700'
+                            }`,
+                          },
+                          React.createElement('p', null, m.text)
+                        ),
+                        React.createElement('span', { className: 'text-[10px] text-slate-500 font-mono mt-1' }, m.time)
+                      )
+                    )
+                  ),
+
+                  // Quick FAQ tags
+                  React.createElement(
+                    'div',
+                    { className: `px-3 py-2 border-t flex items-center gap-1.5 overflow-x-auto ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'}` },
+                    quickQuestions.map((q, i) =>
+                      React.createElement(
+                        'button',
+                        {
+                          key: i,
+                          onClick: () => handleSendChat(q),
+                          className: `shrink-0 px-2.5 py-1 rounded-full text-[11px] border transition ${isLight ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'}`,
+                        },
+                        q
+                      )
+                    )
+                  ),
+
+                  // Chat Input Bar
+                  React.createElement(
+                    'div',
+                    { className: `p-3 border-t flex items-center gap-2 ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'}` },
+                    React.createElement('input', {
+                      type: 'text',
+                      placeholder: 'Ask a question about carpooling, route rules, or payments...',
+                      value: chatInput,
+                      onChange: (e) => setChatInput(e.target.value),
+                      onKeyDown: (e) => e.key === 'Enter' && handleSendChat(),
+                      className: `flex-1 rounded-xl border px-3.5 py-2 text-xs focus:outline-none ${isLight ? 'bg-white border-slate-300 text-black' : 'bg-slate-900 border-slate-800 text-white'}`
+                    }),
+                    React.createElement(
+                      'button',
+                      {
+                        onClick: () => handleSendChat(),
+                        className: `p-2.5 rounded-xl text-white shadow-lg transition ${isLight ? 'bg-yellow-400 text-black font-bold hover:bg-yellow-300' : 'bg-blue-600 hover:bg-blue-500'}`
+                      },
+                      '➤'
+                    )
+                  )
+                ),
+
+                React.createElement(
+                  'div',
+                  { className: 'lg:col-span-5 space-y-4' },
+                  React.createElement(
+                    'div',
+                    { className: `p-5 rounded-3xl border shadow-xl space-y-3 ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900/90 border-slate-800'}` },
+                    React.createElement('h3', { className: `font-bold text-xs ${isLight ? 'text-black' : 'text-white'}` }, '🛡️ Safety & Etiquette Guidelines'),
+                    React.createElement('ul', { className: `space-y-2 text-xs leading-relaxed list-disc list-inside ${isLight ? 'text-slate-600' : 'text-slate-400'}` },
+                      React.createElement('li', null, 'Always display company ID badge during pooled rides.'),
+                      React.createElement('li', null, 'Drivers will wait a maximum of 5 minutes at pickup spots.'),
+                      React.createElement('li', null, 'All fleet cars are FASTag automated with zero manual toll fees.')
+                    )
+                  )
+                )
+              )
         );
       }
 
