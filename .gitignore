@@ -17,3 +17,7 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Local SQLite WAL & lock files
+*.db-shm
+*.db-wal
