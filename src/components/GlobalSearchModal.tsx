@@ -76,7 +76,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, on
           <input
             type="text"
             autoFocus
-            placeholder="Search employees, routes, vehicles, trips (e.g. Infocity, Swift, Raj)..."
+            placeholder="Search employees, routes, vehicles, trips (e.g. Sector V, Salt Lake, Swift, Raj)..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="w-full bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none"

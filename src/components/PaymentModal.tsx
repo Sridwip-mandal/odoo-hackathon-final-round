@@ -73,7 +73,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         userId: currentUser.id,
         type: 'debit',
         amount: fareAmount,
-        description: `Carpool Fare: ${trip?.startLocation || 'ISKCON'} to ${trip?.destinationLocation || 'Infocity'}`,
+        description: `Carpool Fare: ${trip?.startLocation || 'Park Street, Kolkata'} to ${trip?.destinationLocation || 'Sector V, Salt Lake, Kolkata'}`,
         timestamp: new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }),
         paymentMethod: selectedMethod === 'Wallet' ? 'Wallet' : selectedMethod === 'Card' ? 'Card' : selectedMethod === 'UPI' ? 'UPI' : 'Cash',
         status: 'success',
@@ -157,7 +157,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               <div>
                 <span className="text-slate-400">Route:</span>
                 <p className="font-semibold text-white mt-0.5">
-                  {trip?.startLocation || 'ISKCON Cross Road'} → {trip?.destinationLocation || 'Infocity'}
+                  {trip?.startLocation || 'Park Street, Kolkata'} → {trip?.destinationLocation || 'Sector V, Salt Lake, Kolkata'}
                 </p>
                 <p className="text-[11px] text-slate-400">Driver: {trip?.driverName || 'Raj Patel'} ({trip?.vehicleModel || 'Swift Dzire'})</p>
               </div>

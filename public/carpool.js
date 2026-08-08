@@ -578,11 +578,11 @@
 
   function CostliestVehiclesSvg() {
     const bars = [
-      { name: 'Innova (GJ01CD778)', cost: '₹9.4k', w: 220, color: '#f43f5e' },
-      { name: 'Swift (GJ01AB1234)', cost: '₹6.2k', w: 160, color: '#fb923c' },
-      { name: 'City (GJ01CD7788)', cost: '₹5.9k', w: 145, color: '#facc15' },
-      { name: 'Alto (GJ01AB5034)', cost: '₹4.1k', w: 110, color: '#38bdf8' },
-      { name: 'Nexon EV (GJ01EV)', cost: '₹1.8k', w: 55, color: '#4ade80' },
+      { name: 'Innova (WB06CD7788)', cost: '₹9.4k', w: 220, color: '#f43f5e' },
+      { name: 'Swift (WB02AB1234)', cost: '₹6.2k', w: 160, color: '#fb923c' },
+      { name: 'City (WB02CD5566)', cost: '₹5.9k', w: 145, color: '#facc15' },
+      { name: 'Alto (WB02EF9988)', cost: '₹4.1k', w: 110, color: '#38bdf8' },
+      { name: 'Nexon EV (WB06EV2026)', cost: '₹1.8k', w: 55, color: '#4ade80' },
     ];
 
     return React.createElement(

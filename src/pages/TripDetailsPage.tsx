@@ -110,7 +110,7 @@ export const TripDetailsPage: React.FC = () => {
           <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
             <span className="text-[10px] uppercase font-bold text-red-400 block">Drop Point</span>
             <p className="font-bold text-white text-sm">{trip.destinationLocation}</p>
-            <p className="text-slate-400 text-[11px]">Infocity Tech Corridor</p>
+            <p className="text-slate-400 text-[11px]">Kolkata Tech Corridor (Sector V)</p>
           </div>
 
           {/* Fare Details */}

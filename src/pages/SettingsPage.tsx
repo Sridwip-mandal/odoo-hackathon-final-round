@@ -151,7 +151,7 @@ export const SettingsPage: React.FC = () => {
             <div className="pt-2 space-y-2 text-xs">
               <input
                 type="text"
-                placeholder="e.g. Infocity Gate 2, Gandhinagar"
+                placeholder="e.g. Sector V, Salt Lake, Kolkata"
                 value={newPlaceAddress}
                 onChange={(e) => setNewPlaceAddress(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"

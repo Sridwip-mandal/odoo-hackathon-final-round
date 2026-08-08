@@ -70,9 +70,9 @@ export const FindRidePage: React.FC = () => {
       <div className="rounded-3xl border border-slate-800 bg-slate-900/95 p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-6 mb-6">
           <div>
-            <h1 className="text-2xl font-extrabold text-white">Find A Pooled Ride</h1>
+            <h1 className="text-2xl font-extrabold text-white">Find A Pooled Ride in Kolkata</h1>
             <p className="text-xs text-slate-400 mt-1">
-              Search verified colleague rides along your Gujarat commute corridor
+              Search verified colleague rides along your Kolkata, Salt Lake & West Bengal transit corridors
             </p>
           </div>
 

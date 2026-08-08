@@ -95,7 +95,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ isOpen, onClos
             <input
               type="text"
               required
-              placeholder="e.g. GJ01AB1234"
+              placeholder="e.g. WB02AB1234"
               value={registrationNumber}
               onChange={(e) => setRegistrationNumber(e.target.value)}
               className="w-full uppercase font-mono font-bold rounded-xl bg-slate-950 border border-slate-800 px-3.5 py-2.5 text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"

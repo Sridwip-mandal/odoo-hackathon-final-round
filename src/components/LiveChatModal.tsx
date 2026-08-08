@@ -25,7 +25,7 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
       tripId,
       senderId: 'driver-1',
       senderName: driverName,
-      text: `Hi! I'm starting from ISKCON in 5 minutes. Swift Dzire (GJ01AB1234). Let me know when you're at the pickup point!`,
+      text: `Hi! I'm starting from Park Street in 5 minutes. Swift Dzire (WB02AB1234). Let me know when you're at the pickup point!`,
       timestamp: '06:55 PM',
       isDriver: true,
     },
@@ -38,7 +38,7 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
     "I'm at the gate",
     "On my way, 2 mins!",
     "Where is the car parked?",
-    "Traffic on SG highway?",
+    "Traffic on EM Bypass?",
   ];
 
   const scrollToBottom = () => {
@@ -76,11 +76,11 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
       setIsTyping(false);
       let replyText = "Got it! See you shortly.";
       if (text.toLowerCase().includes('gate') || text.toLowerCase().includes('pickup')) {
-        replyText = "Perfect! I'm pulling up near the main security gate right now.";
+        replyText = "Perfect! I'm pulling up near the Park Street Metro gate right now.";
       } else if (text.toLowerCase().includes('parked') || text.toLowerCase().includes('where')) {
-        replyText = "I'm right next to the metro pillar #142 with hazard lights on.";
+        replyText = "I'm right near the Science City overpass with hazard lights on.";
       } else if (text.toLowerCase().includes('traffic')) {
-        replyText = "Traffic is smooth on SG Highway, we should reach Infocity in ~25 minutes.";
+        replyText = "Traffic is smooth on EM Bypass & Maa Flyover, we should reach Sector V in ~20 minutes.";
       }
 
       const driverReply: ChatMessage = {

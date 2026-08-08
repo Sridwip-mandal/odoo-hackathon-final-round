@@ -14,8 +14,8 @@ export const SignUpPage: React.FC = () => {
   const [mobile, setMobile] = useState('');
   const [employeeId, setEmployeeId] = useState('');
   const [department, setDepartment] = useState('Engineering');
-  const [manager, setManager] = useState('A. Shah');
-  const [officeLocation, setOfficeLocation] = useState('Ahmedabad Tech Hub');
+  const [manager, setManager] = useState('A. Mukherjee');
+  const [officeLocation, setOfficeLocation] = useState('Kolkata Tech Hub (Sector V)');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
