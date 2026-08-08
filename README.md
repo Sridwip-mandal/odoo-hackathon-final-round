@@ -1,100 +1,110 @@
 # CARPOOL — Enterprise Carpooling Platform
 ### *“Ride Together, Save Together”*
 
+[![Express](https://img.shields.io/badge/Express-ESM-black.svg)](https://expressjs.com/)
+[![SQLite](https://img.shields.io/badge/SQLite-Native%20Zero--Config-003B57.svg)](https://www.sqlite.org/)
 [![React](https://img.shields.io/badge/React-18-blue.svg)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.2-blue.svg)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC.svg)](https://tailwindcss.com/)
 [![Leaflet](https://img.shields.io/badge/Leaflet-Maps-199900.svg)](https://leafletjs.com/)
-[![License](https://img.shields.io/badge/License-Proprietary-purple.svg)]()
 
-CARPOOL is an enterprise-grade carpooling and corporate mobility platform built for **Odoo Pvt. Ltd.** to coordinate secure shared commutes along major corporate transit corridors in **Kolkata, West Bengal** (Park Street, Salt Lake Sector V, EM Bypass, Science City, Chingrighata, Howrah, and New Town Rajarhat).
-
----
-
-## 🌟 Key Features
-
-### 🎨 1. Dual Elegant Theme System (Dark & Light)
-- **Dark Mode**: Sleek midnight slate (`#080b11`), glowing electric cyan/emerald neon accents, dark glassmorphism, and CartoDB dark matter maps.
-- **Light Mode**: Crisp pure white canvas, rich bold black typography, delicate gray borders, and vibrant sunny yellow (`#facc15` & `#eab308`) action highlights and badges.
-- **Instant Theme Switcher**: Dedicated Theme toggle button in Employee Navbar, Admin Header, and Visual Theme Cards in Settings.
-
-### 👤 2. Employee Portal (Kolkata Transit Corridors)
-- **Interactive Dashboard**: Real-time KPI cards (Available Rides, Upcoming Trips, Total Trips, Wallet Balance), upcoming ride countdown banner, and fleet fuel economy charts.
-- **Find Ride & Route Matching**: Swap start & drop points (Park Street, Sector V Salt Lake, Gariahat, Howrah, New Town), filter by seat count & recurring weekdays (Mon-Sun), and view route corridors on an interactive OpenStreetMap engine.
-- **Live GPS Trip Tracking**: Simulated real-time car movement along Kolkata EM Bypass, ETA countdown (*"Arriving at Pickup in ~5 Mins"*), in-trip driver chat, voice call simulation, SOS emergency alerts, and one-click fare settlement.
-- **Offer / Publish Rides**: Corporate drivers can publish empty seats with custom notes, vehicle selection, and fair per-seat pricing.
-- **Fleet & Vehicle Management**: Register vehicles (Swift Dzire, Alto 800, Innova Crysta, Tata Nexon EV, Honda City) with WB registration plates (`WB02AB1234`, `WB06AB5034`, `WB20CD778`, `WB06EV9921`, `WB02CD7788`).
-- **Corporate Mobility Wallet**: Balance tracking, recharge presets (₹100, ₹250, ₹500, ₹1000), dynamic UPI QR code generator, and transaction history.
-- **Ride History & Receipts**: Searchable completed journeys with detailed fare and itinerary breakdowns.
-- **AI Mobility Concierge**: Interactive corporate chatbot for safety policies, fuel tax reimbursement queries, and campus helpline contacts.
-
-### 🛡️ 3. Admin Governance Console
-- **Executive Mobility Analytics**: Total employees (48), registered fleet (22), monthly rides (163), and ESG carbon audit reports (2,940 kg CO₂ reduced).
-- **Employee Access Management**: Grant or revoke platform access (`[Granted]` / `[Revoked]`), search employee directory, and register new staff.
-- **Fleet Vehicle Approvals**: Approve or deactivate vehicles (`[Active]` / `[Inactive]`) and audit vehicle capacities.
-- **Mobility Pricing Configurations**: Set corporate fuel rate benchmarks (₹106.03/L, ₹8.50/km, ₹2.50/km operational travel cost) and corporate carpooling policy.
+CARPOOL is an enterprise-grade carpooling and corporate mobility platform built for **Odoo Pvt. Ltd.** to coordinate secure shared commutes along major corporate transit corridors in **Kolkata, West Bengal** (Park Street, Salt Lake Sector V, EM Bypass, Ruby Hospital, Howrah Station, Ultadanga, New Town Rajarhat, and Jadavpur).
 
 ---
 
-## 🛠️ Technology Stack
+## 🏗️ Backend Architecture & Technology
 
-- **Frontend**: React 18, TypeScript, Tailwind CSS, Lucide Icons, Recharts
-- **Mapping & Geolocation**: Leaflet OpenStreetMap with CartoDB Voyager tiles and animated vehicle markers
-- **State Management**: Reactive LocalStorage store with custom event synchronization
-- **Backend & Server**: Node.js standalone HTTP server with SPA fallback routing
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js (v18+)
-
-### Installation & Running Locally
-
-1. Clone repository:
-   ```bash
-   git clone https://github.com/Sridwip-mandal/odoo-hackathon-final-round.git
-   cd odoo-hackathon-final-round
-   ```
-
-2. Start the local server:
-   ```bash
-   node server.mjs
-   ```
-
-3. Open in your browser:
-   ```
-   http://localhost:3000/#/
-   ```
+- **Express/ESM API Server (`server.mjs`)**: Serves the static single-page frontend while exposing a high-performance REST API under `/api/*` with SPA fallback routing.
+- **SQLite Persistence (`db.mjs` & `carpool.db`)**: Native zero-config local relational database with WAL journal mode, strict foreign key constraints, and transactional consistency.
+- **JWT & PBKDF2 Security**: HMAC-SHA256 authenticated sessions via httpOnly cookies & `Authorization: Bearer <token>`, with salted password hashing.
+- **Haversine Proximity Route Matcher**: Geospatial coordinate distance ranking algorithm that scores and ranks available pooled rides by deviation from the rider's pickup and destination corridors.
+- **Demo Seeding Script (`seed.mjs`)**: Automatically initializes 48 corporate employees, 22 WB-registered fleet vehicles, transit corridor rides, and wallet transaction history.
 
 ---
 
-## 🧭 Application Routes
+## 🗄️ Relational Database Schema (`carpool.db`)
 
-| Route | Section | Description |
+| Table | Primary Key | Key Attributes & Foreign Keys |
 | :--- | :--- | :--- |
-| `#/` | **Splash Screen** | Animated branding & tagline countdown |
-| `#/login` | **Login Portal** | Employee & Admin sign-in with instant demo switcher |
-| `#/signup` | **Registration** | Employee onboarding with ₹500 welcome credit |
-| `#/dashboard` | **Employee Dashboard** | Real-time mobility KPIs, charts & upcoming commute |
-| `#/find-ride` | **Find Ride** | Interactive Leaflet route map & 1-click booking |
-| `#/live-tracking` | **Live Tracking** | Moving vehicle GPS simulation & in-trip chat/call |
-| `#/my-trips` | **My Trips** | Upcoming, active, and completed ride tabs |
-| `#/offer-ride` | **Offer Ride** | Publish empty seats into the corporate ride pool |
-| `#/my-vehicle` | **My Vehicle** | Registered fleet list & Add Vehicle modal |
-| `#/wallet` | **Wallet** | Available balance, UPI QR code & recharge modal |
-| `#/ride-history` | **Ride History** | Completed rides ledger & receipt viewer |
-| `#/settings` | **Settings** | User profile, saved locations & password modal |
-| `#/reports` | **Reports & ESG** | Fuel cost trends & CO₂ reduction analytics |
-| `#/help-chat` | **Help & Support** | 24/7 AI mobility concierge & safety guidelines |
-| `#/admin/dashboard`| **Admin Dashboard** | Executive mobility KPIs & participation charts |
-| `#/admin/employees`| **Admin Employees** | Platform access controls & employee directory |
-| `#/admin/vehicles` | **Admin Vehicles** | Fleet vehicle approval & status toggles |
-| `#/admin/rides` | **Admin Rides** | Corridor trajectory monitoring & status filters |
-| `#/admin/settings` | **Admin Settings** | Fuel cost/L & per-km corporate reimbursement benchmarks |
+| **`employees`** | `id` (TEXT) | `name`, `email` (UNIQUE), `password_hash`, `role` (`employee`/`admin`), `wallet_balance`, `access_status` (`granted`/`revoked`), `department`, `mobile`, `employee_id`, `manager`, `office_location`, `avatar`, `rating`, `total_trips`, `created_at` |
+| **`vehicles`** | `id` (TEXT) | `owner_id` (FK → `employees.id`), `model`, `registration_plate` (UNIQUE, `WB-XX-YY-ZZZZ`), `capacity`, `fuel_type`, `color`, `driver_name`, `status` (`active`/`inactive`), `created_at` |
+| **`rides`** | `id` (TEXT) | `driver_id` (FK → `employees.id`), `vehicle_id` (FK → `vehicles.id`), `start_point`, `start_lat`, `start_lng`, `end_point`, `end_lat`, `end_lng`, `route_geojson`, `seats_available`, `price_per_seat`, `recurring_days`, `time`, `date`, `status` (`upcoming`/`active`/`completed`/`cancelled`), `created_at` |
+| **`bookings`** | `id` (TEXT) | `ride_id` (FK → `rides.id`), `rider_id` (FK → `employees.id`), `status` (`pending`/`confirmed`/`completed`/`cancelled`), `fare`, `seats`, `pickup_point`, `drop_point`, `created_at` |
+| **`wallet_transactions`** | `id` (TEXT) | `employee_id` (FK → `employees.id`), `amount`, `type` (`recharge`/`fare`/`refund`/`earning`), `description`, `created_at` |
+| **`ratings`** | `id` (TEXT) | `booking_id`, `rater_id` (FK), `ratee_id` (FK), `stars`, `comment`, `created_at` |
+| **`company_settings`** | `id` (TEXT) | `company_name`, `registered_address`, `fuel_cost_per_liter` (₹106.03), `cost_per_km` (₹8.50), `operational_cost_per_km` (₹2.50), `updated_at` |
 
 ---
 
-## 📄 License
-Proprietary — Developed for Odoo Hackathon 2026.
+## 📡 REST API Reference
+
+### 🔐 1. Authentication
+- `POST /api/auth/signup` — Registers new corporate employee with initial ₹500 mobility credit.
+- `POST /api/auth/login` — Authenticates credentials, validates access status, sets `carpool_token` httpOnly cookie.
+- `POST /api/auth/logout` — Clears authentication cookie.
+- `GET /api/auth/me` — Returns current logged-in employee session.
+
+### 🚗 2. Rides & Route Matching
+- `GET /api/rides?start=Park+Street&end=Sector+V&seats=1&day=Mon` — Returns pooled rides ranked by **Haversine proximity score** (km deviation).
+- `POST /api/rides` — Publishes a new pooled commute with seat capacity and per-seat fare.
+- `GET /api/rides/:id` — Retrieves detailed itinerary, vehicle specs, and driver rating.
+
+### 🎟️ 3. Bookings & Trips
+- `POST /api/bookings` — Atomically deducts fare from rider wallet, credits driver wallet, decrements available seats, and creates confirmed booking.
+- `GET /api/bookings/my` — Returns user's upcoming, active, and completed journeys.
+- `PATCH /api/bookings/:id` — Confirms, cancels (with instant refund), or marks booking complete.
+
+### 💳 4. Mobility Wallet
+- `GET /api/wallet` — Retrieves live wallet balance and transaction ledger.
+- `POST /api/wallet/recharge` — Instant wallet top-up (₹100, ₹250, ₹500, ₹1000) with dynamic UPI QR code.
+
+### 🛡️ 5. Admin Governance & ESG Analytics
+- `GET /api/admin/employees` — Lists all registered staff with access toggles (`[Granted]` / `[Revoked]`).
+- `PATCH /api/admin/employees/:id` — Updates employee access status or role.
+- `GET /api/admin/vehicles` — Fleet registry with status toggles (`[Active]` / `[Inactive]`).
+- `PATCH /api/admin/vehicles/:id` — Approves or deactivates fleet vehicles.
+- `GET /api/admin/analytics` — Executive ESG report:
+  $$\text{CO}_2\text{ Saved (kg)} = \text{Completed Bookings} \times 16.5\text{ km} \times 0.12\text{ kg/km}$$
+  $$\text{Fuel Saved (Liters)} = \frac{\text{Completed Bookings} \times 16.5}{14.5\text{ km/L}}$$
+- `GET /api/admin/settings` & `POST /api/admin/settings` — Configures fuel rate benchmarks.
+
+---
+
+## 🔄 LocalStorage to REST API Migration Map
+
+To swap existing frontend `localStorage` calls for real REST API calls, use the built-in `window.CARPOOL_API` client ([public/api-client.js](file:///c:/Users/sridw/odoo%20hackathon%20final%20round/odoo-hackathon-final-round/public/api-client.js)):
+
+| Component / Action | Old `localStorage` Call | New REST API Call (`fetch` / SDK) |
+| :--- | :--- | :--- |
+| **Login** | `store.setCurrentUser(user)` | `await CARPOOL_API.login(email, password)` |
+| **Signup** | `store.addUser(newEmp)` | `await CARPOOL_API.signup(formData)` |
+| **Find Ride** | `store.getRides().filter(...)` | `await CARPOOL_API.getRides({ start, end, seats, day })` |
+| **Publish Ride** | `store.setRides([...rides, newRide])` | `await CARPOOL_API.publishRide(rideData)` |
+| **Book Ride** | `store.setTrips([...trips, booking])` | `await CARPOOL_API.bookRide({ ride_id, seats, pickup_point })` |
+| **My Trips** | `store.getTrips()` | `await CARPOOL_API.getMyTrips()` |
+| **Wallet Recharge** | `store.setCurrentUser({ ...user, walletBalance })` | `await CARPOOL_API.rechargeWallet(500)` |
+| **Admin Employees** | `store.getUsers()` | `await CARPOOL_API.getAdminEmployees()` |
+| **Toggle Access** | `store.updateUser({ ...emp, platformAccess })` | `await CARPOOL_API.toggleEmployeeAccess(emp.id, 'revoked')` |
+| **Admin Vehicles** | `store.getVehicles()` | `await CARPOOL_API.getAdminVehicles()` |
+| **Toggle Vehicle** | `store.updateVehicle({ ...veh, status })` | `await CARPOOL_API.toggleVehicleStatus(veh.id, 'active')` |
+| **ESG Analytics** | `store.getSummary()` | `await CARPOOL_API.getAdminAnalytics()` |
+
+---
+
+## 🚀 Running the Project
+
+### Zero-Config Startup (Offline & Evaluator Ready)
+```bash
+# 1. Install dependencies (Node 18+)
+npm install
+
+# 2. Seed database (48 employees, 22 WB fleet vehicles, Kolkata corridors)
+node seed.mjs
+
+# 3. Start Express REST API & Frontend Server
+npm start
+```
+
+Open browser at: **[http://localhost:3000/#/](http://localhost:3000/#/)**
+- **Employee Demo Account**: `raj.patel@odoo.com` / `password123`
+- **Admin Demo Account**: `admin@odoo.com` / `admin123` (or `password123`)
