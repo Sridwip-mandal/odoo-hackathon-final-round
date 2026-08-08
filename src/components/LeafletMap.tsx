@@ -21,9 +21,55 @@ declare global {
   }
 }
 
+export const KOLKATA_LOCATIONS: Record<string, [number, number]> = {
+  'bally': [22.6500, 88.3400],
+  'ballygunge': [22.5280, 88.3650],
+  'park street': [22.5510, 88.3524],
+  'sector v': [22.5804, 88.4378],
+  'salt lake': [22.5804, 88.4378],
+  'new town': [22.5851, 88.4807],
+  'eco space': [22.5851, 88.4807],
+  'howrah': [22.5830, 88.3426],
+  'gariahat': [22.5186, 88.3653],
+  'shyambazar': [22.6030, 88.3713],
+  'dum dum': [22.6420, 88.4312],
+  'behala': [22.4988, 88.3190],
+  'alipore': [22.5320, 88.3300],
+  'esplanade': [22.5645, 88.3520],
+  'science city': [22.5448, 88.3920],
+  'em bypass': [22.5448, 88.3920],
+  'chingrighata': [22.5690, 88.4050],
+  'ultadanga': [22.5950, 88.3850],
+  'rajarhat': [22.6200, 88.4600],
+  'dankuni': [22.6800, 88.3000],
+  'jadavpur': [22.4990, 88.3710],
+  'tollygunge': [22.4940, 88.3450],
+  'airport': [22.6547, 88.4467],
+  'cc2': [22.6180, 88.4550],
+  'ruby': [22.5130, 88.4020],
+};
+
+export function resolveKolkataCoords(locName: string, fallback: [number, number]): [number, number] {
+  if (!locName) return fallback;
+  const q = locName.toLowerCase().trim();
+  for (const key of Object.keys(KOLKATA_LOCATIONS)) {
+    if (q.includes(key)) {
+      return KOLKATA_LOCATIONS[key];
+    }
+  }
+  let hash = 0;
+  for (let i = 0; i < q.length; i++) {
+    hash = (hash << 5) - hash + q.charCodeAt(i);
+    hash |= 0;
+  }
+  const latOffset = ((Math.abs(hash) % 80) - 40) / 1000;
+  const lngOffset = (((Math.abs(hash) >> 2) % 80) - 40) / 1000;
+  return [22.5726 + latOffset, 88.3639 + lngOffset];
+}
+
 export const LeafletMap: React.FC<LeafletMapProps> = ({
-  startCoords = [22.5510, 88.3524], // Park Street, Kolkata
-  destCoords = [22.5804, 88.4378], // Sector V, Salt Lake, Kolkata
+  startCoords,
+  destCoords,
   startLocationName = 'Park Street, Kolkata',
   destLocationName = 'Sector V, Salt Lake, Kolkata',
   interactive = true,
@@ -42,19 +88,15 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLeafletReady, setIsLeafletReady] = useState(false);
 
-  // Generate intermediate waypoint coordinates along Kolkata EM Bypass & Sector V corridor
-  const generateRouteWaypoints = (start: [number, number], end: [number, number]) => {
-    const waypoints: [number, number][] = [
-      start,
-      [22.5448, 88.3920], // EM Bypass - Science City
-      [22.5690, 88.4050], // Chingrighata / EM Bypass
-      [22.5804, 88.4378], // Salt Lake Sector V (Tech Hub)
-      [22.5851, 88.4807], // New Town Eco Space
-      end,
-    ];
-    return waypoints;
-  };
+  const effectiveStart = startCoords || resolveKolkataCoords(startLocationName, [22.5510, 88.3524]);
+  const effectiveDest = destCoords || resolveKolkataCoords(destLocationName, [22.5804, 88.4378]);
 
+  // Generate intermediate waypoint coordinates dynamically
+  const generateRouteWaypoints = (start: [number, number], end: [number, number]) => {
+    const midLat = (start[0] + end[0]) / 2 + 0.005;
+    const midLng = (start[1] + end[1]) / 2 + 0.008;
+    return [start, [midLat, midLng] as [number, number], end];
+  };
 
   // Interpolate position along route
   const getInterpolatedPoint = (waypoints: [number, number][], progress: number): [number, number] => {

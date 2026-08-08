@@ -1,4 +1,5 @@
-// CARPOOL Enterprise Mobility Platform - Master Application (Dual Dark/Light Theme & Kolkata GPS Transit)
+// CARPOOL Enterprise Mobility Platform - Master Application
+// Full Interactive Admin Employee & Vehicle Management, Dynamic Kolkata Geocoding, Clean QR Payments, Dual Theme
 (function () {
   'use strict';
 
@@ -95,7 +96,7 @@
     );
   }
 
-  // --- Master App Container with Dual Theme & Navigation ---
+  // --- Master App Container with Dual Theme & Admin Management ---
   function MainApp() {
     const { route, navigate } = useHashRouter();
 
@@ -116,6 +117,15 @@
     const [txs, setTxs] = useState(() => store.getTxs());
     const [settings, setSettings] = useState(() => store.getSettings());
 
+    // Dynamic Geolocation Search State for Find Ride
+    const [findStart, setFindStart] = useState('Park Street, Kolkata');
+    const [findDest, setFindDest] = useState('Sector V, Salt Lake, Kolkata');
+
+    // Search and Filter states
+    const [empSearch, setEmpSearch] = useState('');
+    const [vehSearch, setVehSearch] = useState('');
+    const [deptFilter, setDeptFilter] = useState('all');
+
     // Global Modal States
     const [showSearch, setShowSearch] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -126,7 +136,6 @@
     const [paymentTrip, setPaymentTrip] = useState(null);
     const [showAddVehicle, setShowAddVehicle] = useState(false);
     const [showAddEmp, setShowAddEmp] = useState(false);
-    const [notificationsOpen, setNotificationsOpen] = useState(false);
 
     const toast = useToast();
 
@@ -551,7 +560,7 @@
                     ? 'bg-yellow-400 text-black border-yellow-500 shadow-md hover:bg-yellow-300'
                     : 'bg-slate-900 text-yellow-400 border-slate-800 hover:border-yellow-400 shadow-inner'
                 }`,
-                title: isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode (Yellow, Black, Gray, White)',
+                title: isLight ? 'Switch to Dark Mode' : 'Switch to Light Theme (Yellow, Black, Gray, White)',
               },
               React.createElement('span', null, isLight ? '☀️ Light' : '🌙 Dark')
             ),
@@ -647,7 +656,7 @@
       );
     };
 
-    // --- Admin Sidebar Navigation ---
+    // --- Admin Sidebar Navigation (Single Clean Navigation without duplicates) ---
     const renderAdminSidebar = () => {
       const adminLinks = [
         { to: '/admin/dashboard', label: 'Dashboard', icon: 'car' },
@@ -764,7 +773,7 @@
         );
       }
 
-      // 2. Find Ride
+      // 2. Find Ride (Dynamic Geolocation & Live Map Binding)
       if (route === '/find-ride') {
         return React.createElement(
           'div',
@@ -776,8 +785,30 @@
             React.createElement(
               'div',
               { className: 'grid grid-cols-1 sm:grid-cols-2 gap-4' },
-              React.createElement('div', null, React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-400'} block mb-1 font-semibold` }, 'Start Location (Kolkata Origin)'), React.createElement('input', { type: 'text', defaultValue: 'Park Street, Kolkata', className: `w-full ${isLight ? 'bg-white border-slate-300 text-black focus:border-yellow-500' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl px-3.5 py-2.5 font-medium` })),
-              React.createElement('div', null, React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-400'} block mb-1 font-semibold` }, 'Destination Location (Tech Hub / Campus)'), React.createElement('input', { type: 'text', defaultValue: 'Sector V, Salt Lake, Kolkata', className: `w-full ${isLight ? 'bg-white border-slate-300 text-black focus:border-yellow-500' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl px-3.5 py-2.5 font-medium` }))
+              React.createElement(
+                'div',
+                null,
+                React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-400'} block mb-1 font-semibold` }, 'Start Location (Origin - e.g. Bally, Howrah, Park Street)'),
+                React.createElement('input', {
+                  type: 'text',
+                  value: findStart,
+                  onChange: (e) => setFindStart(e.target.value),
+                  placeholder: 'Type start location...',
+                  className: `w-full ${isLight ? 'bg-white border-slate-300 text-black focus:border-yellow-500' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl px-3.5 py-2.5 font-medium`,
+                })
+              ),
+              React.createElement(
+                'div',
+                null,
+                React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-400'} block mb-1 font-semibold` }, 'Destination Location (Tech Hub / Campus)'),
+                React.createElement('input', {
+                  type: 'text',
+                  value: findDest,
+                  onChange: (e) => setFindDest(e.target.value),
+                  placeholder: 'Type destination location...',
+                  className: `w-full ${isLight ? 'bg-white border-slate-300 text-black focus:border-yellow-500' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl px-3.5 py-2.5 font-medium`,
+                })
+              )
             ),
             React.createElement(
               'div',
@@ -789,7 +820,7 @@
             React.createElement(
               'button',
               {
-                onClick: () => toast.show('Search Updated', 'Kolkata transit corridor routes refreshed.'),
+                onClick: () => toast.show('Route Refreshed', `Map updated for ${findStart} → ${findDest}`),
                 className: `w-full py-3.5 rounded-2xl ${isLight ? 'bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold border border-yellow-500 shadow-md' : 'bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-600/30'} text-sm`,
               },
               'Search Kolkata Commutes'
@@ -801,8 +832,8 @@
             React.createElement(
               'div',
               { className: 'lg:col-span-6 space-y-3' },
-              React.createElement('h3', { className: `text-sm font-bold ${isLight ? 'text-black' : 'text-white'}` }, 'Interactive Kolkata GPS Route Map'),
-              React.createElement(MapView, { startName: 'Park Street, Kolkata', destName: 'Sector V, Salt Lake, Kolkata', height: '420px' })
+              React.createElement('h3', { className: `text-sm font-bold ${isLight ? 'text-black' : 'text-white'}` }, `Interactive GPS Route: ${findStart} → ${findDest}`),
+              React.createElement(MapView, { startName: findStart, destName: findDest, height: '420px' })
             ),
             React.createElement(
               'div',
@@ -1019,8 +1050,62 @@
         );
       }
 
-      // 5. Settings Page (with Theme Switcher Card)
-      if (route === '/settings' || route === '/admin/settings') {
+      // 5. My Vehicle Page (Employee View)
+      if (route === '/my-vehicle') {
+        return React.createElement(
+          'div',
+          { className: 'space-y-6 animate-fade-in text-xs' },
+          React.createElement(
+            'div',
+            { className: 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4' },
+            React.createElement(
+              'div',
+              null,
+              React.createElement('h1', { className: `text-2xl font-extrabold ${isLight ? 'text-black' : 'text-white'}` }, 'My Registered Vehicles'),
+              React.createElement('p', { className: isLight ? 'text-slate-600' : 'text-slate-400' }, 'Manage your verified fleet vehicles for corporate carpooling in Kolkata.')
+            ),
+            React.createElement(
+              'button',
+              {
+                onClick: () => setShowAddVehicle(true),
+                className: `px-5 py-2.5 rounded-xl ${isLight ? 'bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold border border-yellow-500 shadow-md' : 'bg-blue-600 hover:bg-blue-500 text-white font-bold'} flex items-center gap-1.5`,
+              },
+              React.createElement(Icon, { name: 'plus', className: 'w-4 h-4' }),
+              'Register New Vehicle'
+            )
+          ),
+          React.createElement(
+            'div',
+            { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
+            vehicles.map((v) =>
+              React.createElement(
+                'div',
+                { key: v.id, className: `p-6 rounded-3xl border ${isLight ? 'bg-white border-slate-200 shadow-xl' : 'bg-slate-900/90 border-slate-800 shadow-xl'} space-y-3` },
+                React.createElement(
+                  'div',
+                  { className: 'flex justify-between items-start' },
+                  React.createElement(
+                    'div',
+                    null,
+                    React.createElement('h3', { className: `font-extrabold text-base ${isLight ? 'text-black' : 'text-white'}` }, v.model),
+                    React.createElement('span', { className: `inline-block mt-1 font-mono font-bold px-2 py-0.5 rounded-md ${isLight ? 'bg-slate-100 text-slate-900 border border-slate-300' : 'bg-slate-950 text-cyan-400 border border-slate-800'}` }, v.registrationNumber)
+                  ),
+                  React.createElement('span', { className: `px-2 py-0.5 rounded-full font-bold uppercase text-[10px] ${v.status === 'approved' ? (isLight ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30') : 'bg-rose-500/20 text-rose-300'}` }, v.status)
+                ),
+                React.createElement(
+                  'div',
+                  { className: `grid grid-cols-2 gap-2 p-3 rounded-xl ${isLight ? 'bg-slate-50 border border-slate-200 text-slate-700' : 'bg-slate-950 border-slate-800 text-slate-300'}` },
+                  React.createElement('div', null, React.createElement('span', { className: 'text-slate-400 block text-[10px]' }, 'Fuel Type'), React.createElement('span', { className: 'font-bold' }, v.fuelType)),
+                  React.createElement('div', null, React.createElement('span', { className: 'text-slate-400 block text-[10px]' }, 'Capacity'), React.createElement('span', { className: 'font-bold' }, `${v.seatingCapacity} Seats`))
+                )
+              )
+            )
+          )
+        );
+      }
+
+      // 6. Settings Page (with Theme Switcher Card)
+      if (route === '/settings') {
         return React.createElement(
           'div',
           { className: 'space-y-6 animate-fade-in max-w-5xl mx-auto text-xs' },
@@ -1134,7 +1219,7 @@
         );
       }
 
-      // 6. My Trips Page
+      // 7. My Trips Page
       if (route === '/my-trips') {
         return React.createElement(
           'div',
@@ -1159,7 +1244,7 @@
                   'div',
                   { className: 'flex gap-2 pt-2' },
                   React.createElement('button', { onClick: () => navigate('/live-tracking'), className: `px-4 py-2 rounded-xl ${isLight ? 'bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold border border-yellow-500 shadow-sm' : 'bg-blue-600 text-white font-bold'}` }, 'Track Route'),
-                  React.createElement('button', { onClick: () => { setPaymentTrip(t); setShowPayment(true); }, className: `px-4 py-2 rounded-xl ${isLight ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-slate-800 text-slate-200'} border font-bold` }, 'Receipt')
+                  React.createElement('button', { onClick: () => { setPaymentTrip(t); setShowPayment(true); }, className: `px-4 py-2 rounded-xl ${isLight ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-slate-800 text-slate-200'} border font-bold` }, 'Pay / Receipt')
                 )
               )
             )
@@ -1167,16 +1252,435 @@
         );
       }
 
-      // Default Fallback: Admin or Employee Dashboard
+      // ==========================================
+      // ADMIN CONSOLE PAGES
+      // ==========================================
+
+      // ADMIN 1: Admin Employees Page (/admin/employees)
+      if (route === '/admin/employees') {
+        const filteredUsers = users.filter((u) => {
+          if (deptFilter !== 'all' && u.department !== deptFilter) return false;
+          if (!empSearch) return true;
+          const q = empSearch.toLowerCase();
+          return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.officeLocation.toLowerCase().includes(q) || (u.employeeId && u.employeeId.toLowerCase().includes(q));
+        });
+
+        return React.createElement(
+          'div',
+          { className: 'space-y-6 animate-fade-in text-xs' },
+          // Header with SINGLE Primary Add Employee Button
+          React.createElement(
+            'div',
+            { className: 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4' },
+            React.createElement(
+              'div',
+              null,
+              React.createElement('h1', { className: `text-2xl font-extrabold ${isLight ? 'text-black' : 'text-white'}` }, 'Employee Directory & Governance'),
+              React.createElement('p', { className: isLight ? 'text-slate-600' : 'text-slate-400' }, 'Manage employee platform access, corporate IDs, office hubs, and mobility permissions.')
+            ),
+            React.createElement(
+              'button',
+              {
+                onClick: () => setShowAddEmp(true),
+                className: `px-5 py-3 rounded-2xl ${isLight ? 'bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold border border-yellow-500 shadow-lg shadow-yellow-500/25' : 'bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-lg shadow-purple-600/30'} flex items-center gap-2 transition hover:scale-105`,
+              },
+              React.createElement(Icon, { name: 'plus', className: 'w-4 h-4' }),
+              '➕ Add New Employee'
+            )
+          ),
+          // Top Stats
+          React.createElement(
+            'div',
+            { className: 'grid grid-cols-1 sm:grid-cols-4 gap-4' },
+            React.createElement(StatCard, { isLight, title: 'Total Staff Registered', value: users.length, subtitle: 'Corporate staff', iconName: 'users', colorScheme: 'yellow' }),
+            React.createElement(StatCard, { isLight, title: 'Access Granted', value: users.filter((u) => u.platformAccess === 'granted').length, subtitle: 'Active riders', iconName: 'shield', colorScheme: 'emerald' }),
+            React.createElement(StatCard, { isLight, title: 'Verified Drivers', value: vehicles.length, subtitle: 'Fleet operators', iconName: 'car', colorScheme: 'cyan' }),
+            React.createElement(StatCard, { isLight, title: 'Total Commutes', value: '428', subtitle: 'This quarter', iconName: 'chart', colorScheme: 'purple' })
+          ),
+          // Filter & Search Toolbar
+          React.createElement(
+            'div',
+            { className: `p-4 rounded-2xl border ${isLight ? 'bg-white border-slate-200 shadow-md' : 'bg-slate-900 border-slate-800'} flex flex-col sm:flex-row justify-between items-center gap-3` },
+            React.createElement('input', {
+              type: 'text',
+              placeholder: 'Search employee name, email, ID, office...',
+              value: empSearch,
+              onChange: (e) => setEmpSearch(e.target.value),
+              className: `w-full sm:w-80 ${isLight ? 'bg-slate-50 border-slate-300 text-black focus:border-yellow-500' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl px-3.5 py-2`,
+            }),
+            React.createElement(
+              'div',
+              { className: 'flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto' },
+              ['all', 'Engineering', 'Sales', 'Product', 'Design', 'HR & Mobility Operations'].map((d) =>
+                React.createElement(
+                  'button',
+                  {
+                    key: d,
+                    onClick: () => setDeptFilter(d),
+                    className: `px-3 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap transition ${
+                      deptFilter === d
+                        ? isLight
+                          ? 'bg-yellow-400 text-black border border-yellow-500 shadow-sm'
+                          : 'bg-purple-600 text-white shadow-md'
+                        : isLight
+                        ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        : 'bg-slate-950 text-slate-400 hover:text-white'
+                    }`,
+                  },
+                  d === 'all' ? 'All Depts' : d
+                )
+              )
+            )
+          ),
+          // Employee Table
+          React.createElement(
+            'div',
+            { className: `overflow-hidden rounded-3xl border ${isLight ? 'bg-white border-slate-200 shadow-xl' : 'bg-slate-900 border-slate-800 shadow-2xl'}` },
+            React.createElement(
+              'div',
+              { className: 'overflow-x-auto' },
+              React.createElement(
+                'table',
+                { className: 'w-full text-left' },
+                React.createElement(
+                  'thead',
+                  { className: `${isLight ? 'bg-slate-100 border-b border-slate-200 text-slate-700' : 'bg-slate-950 border-b border-slate-800 text-slate-400'} uppercase font-bold text-[10px]` },
+                  React.createElement(
+                    'tr',
+                    null,
+                    React.createElement('th', { className: 'p-4' }, 'Employee'),
+                    React.createElement('th', { className: 'p-4' }, 'Employee ID'),
+                    React.createElement('th', { className: 'p-4' }, 'Department'),
+                    React.createElement('th', { className: 'p-4' }, 'Office Hub'),
+                    React.createElement('th', { className: 'p-4' }, 'Wallet'),
+                    React.createElement('th', { className: 'p-4' }, 'Access'),
+                    React.createElement('th', { className: 'p-4 text-right' }, 'Actions')
+                  )
+                ),
+                React.createElement(
+                  'tbody',
+                  { className: `divide-y ${isLight ? 'divide-slate-100' : 'divide-slate-800'}` },
+                  filteredUsers.map((u) =>
+                    React.createElement(
+                      'tr',
+                      { key: u.id, className: isLight ? 'hover:bg-slate-50/80 transition' : 'hover:bg-slate-800/40 transition' },
+                      React.createElement(
+                        'td',
+                        { className: 'p-4' },
+                        React.createElement(
+                          'div',
+                          { className: 'flex items-center gap-3' },
+                          React.createElement('img', { src: u.avatar, className: `w-9 h-9 rounded-full object-cover ring-2 ${isLight ? 'ring-yellow-400' : 'ring-purple-500'}` }),
+                          React.createElement('div', null, React.createElement('div', { className: `font-bold text-sm ${isLight ? 'text-black' : 'text-white'}` }, u.name), React.createElement('div', { className: 'text-[11px] text-slate-400 font-mono' }, u.email))
+                        )
+                      ),
+                      React.createElement('td', { className: `p-4 font-mono font-bold ${isLight ? 'text-slate-800' : 'text-slate-300'}` }, u.employeeId || 'EMP-1050'),
+                      React.createElement('td', { className: 'p-4' }, React.createElement('span', { className: `px-2 py-0.5 rounded-md font-bold ${isLight ? 'bg-slate-100 text-slate-800' : 'bg-slate-800 text-slate-300'}` }, u.department)),
+                      React.createElement('td', { className: `p-4 ${isLight ? 'text-slate-700' : 'text-slate-300'}` }, u.officeLocation),
+                      React.createElement('td', { className: `p-4 font-mono font-bold ${isLight ? 'text-emerald-700' : 'text-emerald-400'}` }, `₹${u.walletBalance}`),
+                      React.createElement(
+                        'td',
+                        { className: 'p-4' },
+                        React.createElement(
+                          'button',
+                          {
+                            onClick: () => {
+                              const nextAcc = u.platformAccess === 'granted' ? 'revoked' : 'granted';
+                              const updatedUsers = users.map((item) => (item.id === u.id ? { ...item, platformAccess: nextAcc } : item));
+                              store.setUsers(updatedUsers);
+                              setUsers(updatedUsers);
+                              toast.show('Access Updated', `${u.name} access is now ${nextAcc.toUpperCase()}.`);
+                            },
+                            className: `px-2.5 py-1 rounded-lg font-bold text-[10px] uppercase border transition ${
+                              u.platformAccess === 'granted'
+                                ? isLight
+                                  ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                                  : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                : isLight
+                                ? 'bg-rose-100 text-rose-900 border-rose-300'
+                                : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                            }`,
+                          },
+                          u.platformAccess === 'granted' ? '✓ Granted' : '✕ Revoked'
+                        )
+                      ),
+                      React.createElement(
+                        'td',
+                        { className: 'p-4 text-right' },
+                        React.createElement(
+                          'button',
+                          {
+                            onClick: () => {
+                              if (confirm(`Delete employee ${u.name}?`)) {
+                                const updatedUsers = users.filter((item) => item.id !== u.id);
+                                store.setUsers(updatedUsers);
+                                setUsers(updatedUsers);
+                                toast.show('Employee Removed', `${u.name} has been deleted.`);
+                              }
+                            },
+                            className: 'px-2.5 py-1 rounded-lg text-rose-500 hover:bg-rose-500/10 font-bold',
+                          },
+                          'Delete'
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        );
+      }
+
+      // ADMIN 2: Admin Vehicles Page (/admin/vehicles)
+      if (route === '/admin/vehicles') {
+        const filteredVehicles = vehicles.filter((v) => {
+          if (!vehSearch) return true;
+          const q = vehSearch.toLowerCase();
+          return v.model.toLowerCase().includes(q) || v.registrationNumber.toLowerCase().includes(q) || v.driverName.toLowerCase().includes(q) || v.fuelType.toLowerCase().includes(q);
+        });
+
+        return React.createElement(
+          'div',
+          { className: 'space-y-6 animate-fade-in text-xs' },
+          // Header with SINGLE Primary Add Vehicle Button
+          React.createElement(
+            'div',
+            { className: 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4' },
+            React.createElement(
+              'div',
+              null,
+              React.createElement('h1', { className: `text-2xl font-extrabold ${isLight ? 'text-black' : 'text-white'}` }, 'Corporate Fleet & Vehicles'),
+              React.createElement('p', { className: isLight ? 'text-slate-600' : 'text-slate-400' }, 'Manage company fleet approvals, West Bengal vehicle registrations, and seating capacities.')
+            ),
+            React.createElement(
+              'button',
+              {
+                onClick: () => setShowAddVehicle(true),
+                className: `px-5 py-3 rounded-2xl ${isLight ? 'bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold border border-yellow-500 shadow-lg shadow-yellow-500/25' : 'bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-lg shadow-purple-600/30'} flex items-center gap-2 transition hover:scale-105`,
+              },
+              React.createElement(Icon, { name: 'plus', className: 'w-4 h-4' }),
+              '➕ Add Fleet Vehicle'
+            )
+          ),
+          // Top Stats
+          React.createElement(
+            'div',
+            { className: 'grid grid-cols-1 sm:grid-cols-4 gap-4' },
+            React.createElement(StatCard, { isLight, title: 'Total Fleet Vehicles', value: vehicles.length, subtitle: 'WB Plates', iconName: 'car', colorScheme: 'yellow' }),
+            React.createElement(StatCard, { isLight, title: 'Approved & Active', value: vehicles.filter((v) => v.status === 'approved').length, subtitle: 'Ready for pool', iconName: 'shield', colorScheme: 'emerald' }),
+            React.createElement(StatCard, { isLight, title: 'Zero-Emission (EV)', value: vehicles.filter((v) => v.fuelType === 'Electric' || v.vehicleType === 'EV').length || 1, subtitle: 'Tata Nexon EV', iconName: 'leaf', colorScheme: 'cyan' }),
+            React.createElement(StatCard, { isLight, title: 'Avg Capacity', value: '4.2 Seats', subtitle: 'Per vehicle', iconName: 'users', colorScheme: 'purple' })
+          ),
+          // Filter Toolbar
+          React.createElement(
+            'div',
+            { className: `p-4 rounded-2xl border ${isLight ? 'bg-white border-slate-200 shadow-md' : 'bg-slate-900 border-slate-800'} flex justify-between items-center` },
+            React.createElement('input', {
+              type: 'text',
+              placeholder: 'Search model, WB plate number, driver...',
+              value: vehSearch,
+              onChange: (e) => setVehSearch(e.target.value),
+              className: `w-full sm:w-80 ${isLight ? 'bg-slate-50 border-slate-300 text-black focus:border-yellow-500' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl px-3.5 py-2`,
+            })
+          ),
+          // Vehicle Table
+          React.createElement(
+            'div',
+            { className: `overflow-hidden rounded-3xl border ${isLight ? 'bg-white border-slate-200 shadow-xl' : 'bg-slate-900 border-slate-800 shadow-2xl'}` },
+            React.createElement(
+              'div',
+              { className: 'overflow-x-auto' },
+              React.createElement(
+                'table',
+                { className: 'w-full text-left' },
+                React.createElement(
+                  'thead',
+                  { className: `${isLight ? 'bg-slate-100 border-b border-slate-200 text-slate-700' : 'bg-slate-950 border-b border-slate-800 text-slate-400'} uppercase font-bold text-[10px]` },
+                  React.createElement(
+                    'tr',
+                    null,
+                    React.createElement('th', { className: 'p-4' }, 'Vehicle Model'),
+                    React.createElement('th', { className: 'p-4' }, 'WB Plate Number'),
+                    React.createElement('th', { className: 'p-4' }, 'Assigned Driver'),
+                    React.createElement('th', { className: 'p-4' }, 'Capacity'),
+                    React.createElement('th', { className: 'p-4' }, 'Fuel Type'),
+                    React.createElement('th', { className: 'p-4' }, 'Status'),
+                    React.createElement('th', { className: 'p-4 text-right' }, 'Actions')
+                  )
+                ),
+                React.createElement(
+                  'tbody',
+                  { className: `divide-y ${isLight ? 'divide-slate-100' : 'divide-slate-800'}` },
+                  filteredVehicles.map((v) =>
+                    React.createElement(
+                      'tr',
+                      { key: v.id, className: isLight ? 'hover:bg-slate-50/80 transition' : 'hover:bg-slate-800/40 transition' },
+                      React.createElement(
+                        'td',
+                        { className: 'p-4' },
+                        React.createElement('div', { className: `font-bold text-sm ${isLight ? 'text-black' : 'text-white'}` }, v.model),
+                        React.createElement('div', { className: 'text-[10px] text-slate-400' }, v.vehicleType || 'Sedan')
+                      ),
+                      React.createElement(
+                        'td',
+                        { className: 'p-4' },
+                        React.createElement('span', { className: `px-2.5 py-1 rounded-md font-mono font-bold text-xs border ${isLight ? 'bg-yellow-50 border-yellow-300 text-yellow-950' : 'bg-slate-950 border-slate-700 text-cyan-300'}` }, v.registrationNumber)
+                      ),
+                      React.createElement('td', { className: `p-4 font-semibold ${isLight ? 'text-slate-800' : 'text-white'}` }, v.driverName),
+                      React.createElement('td', { className: 'p-4' }, `${v.seatingCapacity} Seats`),
+                      React.createElement(
+                        'td',
+                        { className: 'p-4' },
+                        React.createElement('span', { className: `px-2 py-0.5 rounded-md font-bold text-[10px] ${v.fuelType === 'Electric' ? (isLight ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-emerald-500/20 text-emerald-300') : isLight ? 'bg-slate-100 text-slate-800' : 'bg-slate-800 text-slate-300'}` }, v.fuelType)
+                      ),
+                      React.createElement(
+                        'td',
+                        { className: 'p-4' },
+                        React.createElement(
+                          'button',
+                          {
+                            onClick: () => {
+                              const nextStat = v.status === 'approved' ? 'inactive' : 'approved';
+                              const updatedVeh = vehicles.map((item) => (item.id === v.id ? { ...item, status: nextStat } : item));
+                              store.setVehicles(updatedVeh);
+                              setVehicles(updatedVeh);
+                              toast.show('Vehicle Status Updated', `${v.model} status is now ${nextStat.toUpperCase()}.`);
+                            },
+                            className: `px-2.5 py-1 rounded-lg font-bold text-[10px] uppercase border transition ${
+                              v.status === 'approved'
+                                ? isLight
+                                  ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                                  : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                : isLight
+                                ? 'bg-slate-200 text-slate-800 border-slate-300'
+                                : 'bg-slate-800 text-slate-400 border-slate-700'
+                            }`,
+                          },
+                          v.status === 'approved' ? '✓ Approved' : 'Inactive'
+                        )
+                      ),
+                      React.createElement(
+                        'td',
+                        { className: 'p-4 text-right' },
+                        React.createElement(
+                          'button',
+                          {
+                            onClick: () => {
+                              if (confirm(`Delete vehicle ${v.model} (${v.registrationNumber})?`)) {
+                                const updatedVeh = vehicles.filter((item) => item.id !== v.id);
+                                store.setVehicles(updatedVeh);
+                                setVehicles(updatedVeh);
+                                toast.show('Vehicle Removed', `${v.model} has been deleted.`);
+                              }
+                            },
+                            className: 'px-2.5 py-1 rounded-lg text-rose-500 hover:bg-rose-500/10 font-bold',
+                          },
+                          'Delete'
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        );
+      }
+
+      // ADMIN 3: Admin Rides Page (/admin/rides)
+      if (route === '/admin/rides') {
+        return React.createElement(
+          'div',
+          { className: 'space-y-6 animate-fade-in text-xs' },
+          React.createElement('h1', { className: `text-2xl font-extrabold ${isLight ? 'text-black' : 'text-white'}` }, 'Active Corporate Rides (Kolkata Corridor)'),
+          React.createElement(
+            'div',
+            { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
+            rides.map((r) =>
+              React.createElement(
+                'div',
+                { key: r.id, className: `p-6 rounded-3xl border ${isLight ? 'bg-white border-slate-200 shadow-xl text-slate-900' : 'bg-slate-900/90 border-slate-800 shadow-xl text-white'} space-y-3` },
+                React.createElement(
+                  'div',
+                  { className: 'flex justify-between items-start' },
+                  React.createElement('div', null, React.createElement('h3', { className: 'font-bold text-base' }, r.driverName), React.createElement('p', { className: isLight ? 'text-slate-600' : 'text-slate-400' }, `${r.vehicleModel} • ${r.registrationNumber}`)),
+                  React.createElement('span', { className: `font-mono font-extrabold text-base ${isLight ? 'text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200' : 'text-emerald-400'}` }, `₹${r.farePerSeat}`)
+                ),
+                React.createElement('div', { className: `p-3 rounded-xl border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'}` }, `${r.startLocation} → ${r.destinationLocation}`),
+                React.createElement('div', { className: isLight ? 'text-slate-600' : 'text-slate-400' }, `${r.availableSeats} seats left • Departure: ${r.departureTime}`)
+              )
+            )
+          )
+        );
+      }
+
+      // ADMIN 4: Admin Reports Page (/admin/reports)
+      if (route === '/admin/reports') {
+        return React.createElement(
+          'div',
+          { className: 'space-y-6 animate-fade-in text-xs' },
+          React.createElement('h1', { className: `text-2xl font-extrabold ${isLight ? 'text-black' : 'text-white'}` }, 'Executive Mobility & ESG Carbon Audit'),
+          React.createElement(
+            'div',
+            { className: 'grid grid-cols-1 lg:grid-cols-2 gap-6' },
+            React.createElement(
+              'div',
+              { className: `p-6 rounded-3xl border ${isLight ? 'bg-white border-slate-200 shadow-xl' : 'bg-slate-900/90 border-slate-800 shadow-xl'} space-y-4` },
+              React.createElement('h3', { className: `font-bold text-sm ${isLight ? 'text-black' : 'text-white'}` }, 'Kolkata Corridor Fuel Efficiency (km/L)'),
+              React.createElement(FuelTrendSvg)
+            ),
+            React.createElement(
+              'div',
+              { className: `p-6 rounded-3xl border ${isLight ? 'bg-white border-slate-200 shadow-xl' : 'bg-slate-900/90 border-slate-800 shadow-xl'} space-y-4` },
+              React.createElement('h3', { className: `font-bold text-sm ${isLight ? 'text-black' : 'text-white'}` }, 'Top Costliest Fleet Vehicles (WB Plates)'),
+              React.createElement(CostliestVehiclesSvg)
+            )
+          )
+        );
+      }
+
+      // ADMIN 5: Admin Dashboard Page (/admin/dashboard)
       if (isAdmin) {
         return React.createElement(
           'div',
           { className: 'space-y-6 animate-fade-in text-xs' },
-          React.createElement('h1', { className: `text-2xl font-extrabold ${isLight ? 'text-black' : 'text-white'}` }, 'Kolkata Enterprise Mobility Console'),
+          React.createElement(
+            'div',
+            { className: 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4' },
+            React.createElement(
+              'div',
+              null,
+              React.createElement('h1', { className: `text-2xl font-extrabold ${isLight ? 'text-black' : 'text-white'}` }, 'Kolkata Enterprise Mobility Console'),
+              React.createElement('p', { className: isLight ? 'text-slate-600' : 'text-slate-400' }, 'Manage employee access, fleet vehicles, corporate subsidies, and live Kolkata transit radars.')
+            ),
+            React.createElement(
+              'div',
+              { className: 'flex items-center gap-2' },
+              React.createElement(
+                'button',
+                {
+                  onClick: () => setShowAddEmp(true),
+                  className: `px-4 py-2.5 rounded-xl ${isLight ? 'bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold border border-yellow-500 shadow-md' : 'bg-purple-600 hover:bg-purple-500 text-white font-bold'} flex items-center gap-1.5`,
+                },
+                React.createElement(Icon, { name: 'plus', className: 'w-4 h-4' }),
+                'Add Employee'
+              ),
+              React.createElement(
+                'button',
+                {
+                  onClick: () => setShowAddVehicle(true),
+                  className: `px-4 py-2.5 rounded-xl ${isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-300 font-bold' : 'bg-slate-900 border border-slate-800 text-cyan-300 font-bold'} flex items-center gap-1.5`,
+                },
+                React.createElement(Icon, { name: 'car', className: 'w-4 h-4' }),
+                'Add Vehicle'
+              )
+            )
+          ),
           React.createElement(
             'div',
             { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4' },
-            React.createElement(StatCard, { isLight, title: 'Total Registered Employees', value: users.length, subtitle: 'Kolkata office', iconName: 'users', colorScheme: 'yellow', onClick: () => navigate('/admin/employees') }),
+            React.createElement(StatCard, { isLight, title: 'Total Registered Staff', value: users.length, subtitle: 'Kolkata office', iconName: 'users', colorScheme: 'yellow', onClick: () => navigate('/admin/employees') }),
             React.createElement(StatCard, { isLight, title: 'Active Fleet Vehicles', value: vehicles.length, subtitle: 'WB Plates verified', iconName: 'car', colorScheme: 'purple', onClick: () => navigate('/admin/vehicles') }),
             React.createElement(StatCard, { isLight, title: 'Total Commutes Pooled', value: '428 Trips', subtitle: 'This month', iconName: 'chart', colorScheme: 'emerald', onClick: () => navigate('/admin/reports') }),
             React.createElement(StatCard, { isLight, title: 'Corporate Fuel Subsidy', value: '₹42,800', subtitle: 'Disbursed', iconName: 'wallet', colorScheme: 'cyan', onClick: () => navigate('/admin/reports') })
@@ -1194,7 +1698,9 @@
       return React.createElement('div', { className: 'p-8 text-center' }, React.createElement('button', { onClick: () => navigate('/dashboard'), className: 'px-5 py-2.5 rounded-xl bg-yellow-400 text-black font-bold' }, 'Return to Kolkata Dashboard'));
     };
 
-    // Render Main Layout Container
+    // ==========================================
+    // RENDER MAIN APPLICATION LAYOUT
+    // ==========================================
     return React.createElement(
       'div',
       { className: `min-h-screen ${isLight ? 'bg-slate-50 text-slate-900' : 'bg-slate-950 text-slate-100'} flex flex-col transition-colors duration-300` },
@@ -1209,11 +1715,344 @@
           React.createElement('main', { className: 'flex-1 min-w-0' }, renderPageContent())
         )
       ),
+
+      // ==========================================
+      // MODAL 1: ADD NEW EMPLOYEE (ADMIN)
+      // ==========================================
+      showAddEmp &&
+        React.createElement(
+          'div',
+          { className: `fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl text-xs animate-fade-in` },
+          React.createElement(
+            'div',
+            { className: `w-full max-w-lg rounded-3xl border ${isLight ? 'bg-white border-slate-200 shadow-2xl text-slate-900' : 'bg-slate-900 border-slate-800 shadow-2xl text-white'} p-6 sm:p-8 space-y-4 max-h-[90vh] overflow-y-auto` },
+            React.createElement(
+              'div',
+              { className: `flex justify-between items-center pb-3 border-b ${isLight ? 'border-slate-100' : 'border-slate-800'}` },
+              React.createElement(
+                'div',
+                null,
+                React.createElement('h3', { className: `text-lg font-extrabold ${isLight ? 'text-black' : 'text-white'}` }, 'Register New Corporate Employee'),
+                React.createElement('p', { className: isLight ? 'text-slate-500' : 'text-slate-400' }, 'Add staff member to Kolkata carpooling directory')
+              ),
+              React.createElement('button', { onClick: () => setShowAddEmp(false), className: 'p-1 text-slate-400 hover:text-slate-600 font-bold' }, '✕')
+            ),
+            React.createElement(
+              'form',
+              {
+                onSubmit: (e) => {
+                  e.preventDefault();
+                  const form = e.target;
+                  const name = form.emp_name.value.trim();
+                  const email = form.emp_email.value.trim();
+                  const mobile = form.emp_mobile.value.trim() || '+91 98765 00000';
+                  const employeeId = form.emp_empid.value.trim() || `EMP-${1050 + users.length}`;
+                  const department = form.emp_dept.value;
+                  const officeLocation = form.emp_office.value;
+                  const role = form.emp_role.value;
+                  const walletBalance = parseInt(form.emp_wallet.value) || 500;
+
+                  if (!name || !email) {
+                    toast.show('Validation Error', 'Please enter employee Name and Email.', 'error');
+                    return;
+                  }
+
+                  const newEmp = {
+                    id: `usr-${Date.now()}`,
+                    name,
+                    email,
+                    mobile,
+                    employeeId,
+                    department,
+                    manager: 'A. Shah',
+                    officeLocation,
+                    role,
+                    avatar: `https://images.unsplash.com/photo-${1534528741775 + users.length * 1000}?w=150&auto=format&fit=crop&q=80`,
+                    platformAccess: 'granted',
+                    status: 'active',
+                    rating: 5.0,
+                    totalTrips: 0,
+                    walletBalance,
+                  };
+
+                  const updatedUsers = [...users, newEmp];
+                  store.setUsers(updatedUsers);
+                  setUsers(updatedUsers);
+                  toast.show('Employee Added Successfully!', `${name} (${employeeId}) registered with access GRANTED.`);
+                  setShowAddEmp(false);
+                },
+                className: 'space-y-3.5',
+              },
+              React.createElement(
+                'div',
+                { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3' },
+                React.createElement('div', null, React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-300'} font-semibold block mb-1` }, 'Full Name *'), React.createElement('input', { name: 'emp_name', required: true, placeholder: 'e.g. Sridwip Mandal', className: `w-full ${isLight ? 'bg-slate-50 border-slate-300 text-black' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl px-3 py-2 font-medium` })),
+                React.createElement('div', null, React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-300'} font-semibold block mb-1` }, 'Corporate Email *'), React.createElement('input', { name: 'emp_email', type: 'email', required: true, placeholder: 'sridwip.m@odoo.com', className: `w-full ${isLight ? 'bg-slate-50 border-slate-300 text-black' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl px-3 py-2 font-mono` }))
+              ),
+              React.createElement(
+                'div',
+                { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3' },
+                React.createElement('div', null, React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-300'} font-semibold block mb-1` }, 'Mobile Number'), React.createElement('input', { name: 'emp_mobile', defaultValue: '+91 98300 12345', className: `w-full ${isLight ? 'bg-slate-50 border-slate-300 text-black' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl px-3 py-2 font-mono` })),
+                React.createElement('div', null, React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-300'} font-semibold block mb-1` }, 'Employee ID'), React.createElement('input', { name: 'emp_empid', defaultValue: `EMP-${1052 + users.length}`, className: `w-full ${isLight ? 'bg-slate-50 border-slate-300 text-black' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl px-3 py-2 font-mono font-bold` }))
+              ),
+              React.createElement(
+                'div',
+                { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3' },
+                React.createElement(
+                  'div',
+                  null,
+                  React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-300'} font-semibold block mb-1` }, 'Department'),
+                  React.createElement(
+                    'select',
+                    { name: 'emp_dept', className: `w-full ${isLight ? 'bg-slate-50 border-slate-300 text-black' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl px-3 py-2` },
+                    ['Engineering', 'Sales', 'Product', 'Design', 'HR & Mobility Operations', 'Marketing', 'Finance'].map((d) => React.createElement('option', { key: d, value: d }, d))
+                  )
+                ),
+                React.createElement(
+                  'div',
+                  null,
+                  React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-300'} font-semibold block mb-1` }, 'Base Office Hub'),
+                  React.createElement(
+                    'select',
+                    { name: 'emp_office', className: `w-full ${isLight ? 'bg-slate-50 border-slate-300 text-black' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl px-3 py-2` },
+                    ['Kolkata Tech Hub (Sector V)', 'Kolkata Central (Park Street)', 'New Town Campus (Action Area II)', 'New Town Corporate Headquarters'].map((o) => React.createElement('option', { key: o, value: o }, o))
+                  )
+                )
+              ),
+              React.createElement(
+                'div',
+                { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3' },
+                React.createElement(
+                  'div',
+                  null,
+                  React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-300'} font-semibold block mb-1` }, 'Platform Role'),
+                  React.createElement(
+                    'select',
+                    { name: 'emp_role', className: `w-full ${isLight ? 'bg-slate-50 border-slate-300 text-black' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl px-3 py-2` },
+                    React.createElement('option', { value: 'employee' }, 'Employee (Carpool Rider/Driver)'),
+                    React.createElement('option', { value: 'admin' }, 'Administrator (Full Console Access)')
+                  )
+                ),
+                React.createElement('div', null, React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-300'} font-semibold block mb-1` }, 'Initial Wallet Credit (₹)'), React.createElement('input', { name: 'emp_wallet', type: 'number', defaultValue: 500, className: `w-full ${isLight ? 'bg-slate-50 border-slate-300 text-black' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl px-3 py-2 font-mono font-bold` }))
+              ),
+              React.createElement(
+                'div',
+                { className: `flex justify-end gap-2.5 pt-3 border-t ${isLight ? 'border-slate-100' : 'border-slate-800'}` },
+                React.createElement('button', { type: 'button', onClick: () => setShowAddEmp(false), className: `px-4 py-2 rounded-xl ${isLight ? 'text-slate-600 hover:text-black' : 'text-slate-400 hover:text-white'}` }, 'Cancel'),
+                React.createElement(
+                  'button',
+                  {
+                    type: 'submit',
+                    className: `px-6 py-2.5 rounded-xl ${isLight ? 'bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold border border-yellow-500 shadow-md' : 'bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-lg shadow-purple-600/30'}`,
+                  },
+                  'Save & Grant Access'
+                )
+              )
+            )
+          )
+        ),
+
+      // ==========================================
+      // MODAL 2: ADD NEW FLEET VEHICLE (ADMIN & EMPLOYEE)
+      // ==========================================
+      showAddVehicle &&
+        React.createElement(
+          'div',
+          { className: `fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl text-xs animate-fade-in` },
+          React.createElement(
+            'div',
+            { className: `w-full max-w-lg rounded-3xl border ${isLight ? 'bg-white border-slate-200 shadow-2xl text-slate-900' : 'bg-slate-900 border-slate-800 shadow-2xl text-white'} p-6 sm:p-8 space-y-4 max-h-[90vh] overflow-y-auto` },
+            React.createElement(
+              'div',
+              { className: `flex justify-between items-center pb-3 border-b ${isLight ? 'border-slate-100' : 'border-slate-800'}` },
+              React.createElement(
+                'div',
+                null,
+                React.createElement('h3', { className: `text-lg font-extrabold ${isLight ? 'text-black' : 'text-white'}` }, 'Register Corporate Fleet Vehicle'),
+                React.createElement('p', { className: isLight ? 'text-slate-500' : 'text-slate-400' }, 'Add vehicle to Kolkata mobility pool with West Bengal plate')
+              ),
+              React.createElement('button', { onClick: () => setShowAddVehicle(false), className: 'p-1 text-slate-400 hover:text-slate-600 font-bold' }, '✕')
+            ),
+            React.createElement(
+              'form',
+              {
+                onSubmit: (e) => {
+                  e.preventDefault();
+                  const form = e.target;
+                  const model = form.veh_model.value.trim();
+                  const registrationNumber = form.veh_reg.value.trim().toUpperCase();
+                  const driverName = form.veh_driver.value.trim() || currentUser.name;
+                  const seatingCapacity = parseInt(form.veh_seats.value) || 4;
+                  const vehicleType = form.veh_type.value;
+                  const fuelType = form.veh_fuel.value;
+                  const color = form.veh_color.value.trim() || 'Pearl White';
+
+                  if (!model || !registrationNumber) {
+                    toast.show('Validation Error', 'Please enter Vehicle Model and Registration Number.', 'error');
+                    return;
+                  }
+
+                  const newVeh = {
+                    id: `veh-${Date.now()}`,
+                    userId: currentUser.id,
+                    driverName,
+                    model,
+                    registrationNumber,
+                    seatingCapacity,
+                    vehicleType,
+                    fuelType,
+                    color,
+                    status: 'approved',
+                    isDefault: false,
+                    insuranceValidTill: '2027-12-31',
+                    pucValidTill: '2027-06-30',
+                    rating: 5.0,
+                  };
+
+                  const updatedVehicles = [...vehicles, newVeh];
+                  store.setVehicles(updatedVehicles);
+                  setVehicles(updatedVehicles);
+                  toast.show('Vehicle Registered Successfully!', `${model} (${registrationNumber}) added to active fleet.`);
+                  setShowAddVehicle(false);
+                },
+                className: 'space-y-3.5',
+              },
+              React.createElement(
+                'div',
+                { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3' },
+                React.createElement('div', null, React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-300'} font-semibold block mb-1` }, 'Vehicle Model *'), React.createElement('input', { name: 'veh_model', required: true, placeholder: 'e.g. Swift Dzire / Tata Nexon EV', className: `w-full ${isLight ? 'bg-slate-50 border-slate-300 text-black' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl px-3 py-2 font-medium` })),
+                React.createElement('div', null, React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-300'} font-semibold block mb-1` }, 'WB Plate Number *'), React.createElement('input', { name: 'veh_reg', required: true, placeholder: 'e.g. WB02AB1234', className: `w-full ${isLight ? 'bg-slate-50 border-slate-300 text-black' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl px-3 py-2 font-mono uppercase font-bold` }))
+              ),
+              React.createElement(
+                'div',
+                { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3' },
+                React.createElement(
+                  'div',
+                  null,
+                  React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-300'} font-semibold block mb-1` }, 'Assigned Driver / Owner'),
+                  React.createElement(
+                    'select',
+                    { name: 'veh_driver', className: `w-full ${isLight ? 'bg-slate-50 border-slate-300 text-black' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl px-3 py-2` },
+                    users.map((u) => React.createElement('option', { key: u.id, value: u.name }, `${u.name} (${u.department})`))
+                  )
+                ),
+                React.createElement(
+                  'div',
+                  null,
+                  React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-300'} font-semibold block mb-1` }, 'Seating Capacity'),
+                  React.createElement(
+                    'select',
+                    { name: 'veh_seats', className: `w-full ${isLight ? 'bg-slate-50 border-slate-300 text-black' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl px-3 py-2` },
+                    ['3 Seats', '4 Seats', '5 Seats', '6 Seats', '7 Seats'].map((s) => React.createElement('option', { key: s, value: parseInt(s) }, s))
+                  )
+                )
+              ),
+              React.createElement(
+                'div',
+                { className: 'grid grid-cols-1 sm:grid-cols-3 gap-3' },
+                React.createElement(
+                  'div',
+                  null,
+                  React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-300'} font-semibold block mb-1` }, 'Vehicle Type'),
+                  React.createElement(
+                    'select',
+                    { name: 'veh_type', className: `w-full ${isLight ? 'bg-slate-50 border-slate-300 text-black' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl px-3 py-2` },
+                    ['Sedan', 'Hatchback', 'SUV', 'EV'].map((t) => React.createElement('option', { key: t, value: t }, t))
+                  )
+                ),
+                React.createElement(
+                  'div',
+                  null,
+                  React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-300'} font-semibold block mb-1` }, 'Fuel Type'),
+                  React.createElement(
+                    'select',
+                    { name: 'veh_fuel', className: `w-full ${isLight ? 'bg-slate-50 border-slate-300 text-black' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl px-3 py-2` },
+                    ['Petrol', 'Diesel', 'Electric', 'CNG', 'Hybrid'].map((f) => React.createElement('option', { key: f, value: f }, f))
+                  )
+                ),
+                React.createElement('div', null, React.createElement('label', { className: `${isLight ? 'text-slate-700' : 'text-slate-300'} font-semibold block mb-1` }, 'Color'), React.createElement('input', { name: 'veh_color', defaultValue: 'Pearl White', className: `w-full ${isLight ? 'bg-slate-50 border-slate-300 text-black' : 'bg-slate-950 border-slate-800 text-white'} border rounded-xl px-3 py-2` }))
+              ),
+              React.createElement(
+                'div',
+                { className: `flex justify-end gap-2.5 pt-3 border-t ${isLight ? 'border-slate-100' : 'border-slate-800'}` },
+                React.createElement('button', { type: 'button', onClick: () => setShowAddVehicle(false), className: `px-4 py-2 rounded-xl ${isLight ? 'text-slate-600 hover:text-black' : 'text-slate-400 hover:text-white'}` }, 'Cancel'),
+                React.createElement(
+                  'button',
+                  {
+                    type: 'submit',
+                    className: `px-6 py-2.5 rounded-xl ${isLight ? 'bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold border border-yellow-500 shadow-md' : 'bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-lg shadow-purple-600/30'}`,
+                  },
+                  'Save & Verify Vehicle'
+                )
+              )
+            )
+          )
+        ),
+
+      // ==========================================
+      // MODAL 3: CLEAN UPI / QR PAYMENT MODAL (Centered, High Z-Index, No Map Interference)
+      // ==========================================
+      showPayment &&
+        paymentTrip &&
+        React.createElement(
+          'div',
+          { className: 'fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl text-xs animate-fade-in' },
+          React.createElement(
+            'div',
+            { className: `relative z-10 w-full max-w-md rounded-3xl border ${isLight ? 'bg-white border-slate-200 shadow-2xl text-slate-900' : 'bg-slate-900 border-slate-800 shadow-2xl text-white'} p-8 space-y-5 text-center` },
+            React.createElement(
+              'div',
+              { className: 'flex justify-between items-center' },
+              React.createElement('span', { className: `text-[10px] font-bold uppercase tracking-wider ${isLight ? 'bg-yellow-100 text-yellow-900 px-2 py-0.5 rounded-md border border-yellow-300' : 'bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md border border-emerald-500/30'}` }, 'Instant UPI / Corporate Wallet'),
+              React.createElement('button', { onClick: () => setShowPayment(false), className: 'p-1 text-slate-400 hover:text-slate-600 font-bold text-sm' }, '✕')
+            ),
+            React.createElement(
+              'div',
+              { className: 'space-y-1' },
+              React.createElement('h3', { className: `text-2xl font-extrabold ${isLight ? 'text-black' : 'text-white'}` }, `Pay Driver ₹${paymentTrip.fare}`),
+              React.createElement('p', { className: isLight ? 'text-slate-600 text-xs' : 'text-slate-400 text-xs' }, `Scan QR or Auto-Debit for trip to ${paymentTrip.destinationLocation.split(',')[0]}`)
+            ),
+            // Central QR Code container
+            React.createElement(
+              'div',
+              { className: `p-4 rounded-3xl border ${isLight ? 'bg-slate-50 border-slate-200 shadow-inner' : 'bg-slate-950 border-slate-800 shadow-inner'} flex flex-col items-center justify-center` },
+              React.createElement(DynamicQrCode, { fare: paymentTrip.fare }),
+              React.createElement('span', { className: `mt-3 font-mono font-bold text-xs ${isLight ? 'text-slate-700 bg-white px-3 py-1 rounded-xl border border-slate-200' : 'text-cyan-300 bg-slate-900 px-3 py-1 rounded-xl border border-slate-800'}` }, 'UPI ID: raj.patel@okaxis')
+            ),
+            React.createElement(
+              'div',
+              { className: 'space-y-2' },
+              React.createElement(
+                'button',
+                {
+                  onClick: () => {
+                    const u = { ...currentUser, walletBalance: Math.max(0, currentUser.walletBalance - paymentTrip.fare) };
+                    store.setCurrentUser(u);
+                    setCurrentUser(u);
+                    toast.show('Payment Completed Successfully!', `₹${paymentTrip.fare} transferred to ${paymentTrip.driverName}.`);
+                    setShowPayment(false);
+                  },
+                  className: `w-full py-3.5 rounded-2xl ${isLight ? 'bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold border border-yellow-500 shadow-xl shadow-yellow-500/25' : 'bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-600/30'} text-sm transition`,
+                },
+                `Confirm Payment (₹${paymentTrip.fare})`
+              ),
+              React.createElement(
+                'button',
+                {
+                  onClick: () => setShowPayment(false),
+                  className: `w-full py-2 ${isLight ? 'text-slate-500 hover:text-black' : 'text-slate-400 hover:text-white'} font-semibold`,
+                },
+                'Cancel & Pay Later'
+              )
+            )
+          )
+        ),
+
       // --- Recharge Modal ---
       showRecharge &&
         React.createElement(
           'div',
-          { className: `fixed inset-0 z-50 flex items-center justify-center p-4 ${isLight ? 'bg-black/40' : 'bg-slate-950/80'} backdrop-blur-md text-xs` },
+          { className: `fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl text-xs animate-fade-in` },
           React.createElement(
             'div',
             { className: `w-full max-w-md rounded-3xl border ${isLight ? 'bg-white border-slate-200 shadow-2xl text-slate-900' : 'bg-slate-900 border-slate-800 shadow-2xl text-white'} p-6 space-y-4` },
@@ -1240,11 +2079,12 @@
             )
           )
         ),
+
       // --- Global Search Modal (Ctrl+K) ---
       showSearch &&
         React.createElement(
           'div',
-          { className: `fixed inset-0 z-50 flex items-start justify-center pt-20 p-4 ${isLight ? 'bg-black/40' : 'bg-slate-950/80'} backdrop-blur-md text-xs` },
+          { className: `fixed inset-0 z-[999999] flex items-start justify-center pt-20 p-4 bg-black/80 backdrop-blur-xl text-xs animate-fade-in` },
           React.createElement(
             'div',
             { className: `w-full max-w-xl rounded-3xl border ${isLight ? 'bg-white border-slate-200 shadow-2xl' : 'bg-slate-900 border-slate-800 shadow-2xl'} p-4 space-y-3` },
@@ -1276,32 +2116,6 @@
               )
             ),
             React.createElement('button', { onClick: () => setShowSearch(false), className: `w-full py-2 text-center ${isLight ? 'text-slate-500' : 'text-slate-500'}` }, 'Close (Esc)')
-          )
-        ),
-      // --- Payment Modal ---
-      showPayment &&
-        paymentTrip &&
-        React.createElement(
-          'div',
-          { className: `fixed inset-0 z-50 flex items-center justify-center p-4 ${isLight ? 'bg-black/40' : 'bg-slate-950/80'} backdrop-blur-md text-xs` },
-          React.createElement(
-            'div',
-            { className: `w-full max-w-sm rounded-3xl border ${isLight ? 'bg-white border-slate-200 shadow-2xl text-slate-900' : 'bg-slate-900 border-slate-800 shadow-2xl text-white'} p-6 space-y-4 text-center` },
-            React.createElement('h3', { className: `text-base font-extrabold ${isLight ? 'text-black' : 'text-white'}` }, `Pay Driver ₹${paymentTrip.fare}`),
-            React.createElement('p', { className: isLight ? 'text-slate-600' : 'text-slate-400' }, `Scan QR to complete trip to ${paymentTrip.destinationLocation.split(',')[0]}`),
-            React.createElement(DynamicQrCode, { fare: paymentTrip.fare }),
-            React.createElement(
-              'button',
-              {
-                onClick: () => {
-                  toast.show('Payment Completed!', `₹${paymentTrip.fare} paid to ${paymentTrip.driverName}.`);
-                  setShowPayment(false);
-                },
-                className: `w-full py-3 rounded-xl ${isLight ? 'bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold border border-yellow-500 shadow-md' : 'bg-emerald-600 text-white font-bold'}`,
-              },
-              'Confirm UPI / Wallet Payment'
-            ),
-            React.createElement('button', { onClick: () => setShowPayment(false), className: `w-full py-1.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}` }, 'Cancel')
           )
         )
     );

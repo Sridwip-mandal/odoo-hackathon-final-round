@@ -54,8 +54,54 @@
     );
   }
 
+  const KOLKATA_LOCATIONS = {
+    'bally': [22.6500, 88.3400],
+    'ballygunge': [22.5280, 88.3650],
+    'park street': [22.5510, 88.3524],
+    'sector v': [22.5804, 88.4378],
+    'salt lake': [22.5804, 88.4378],
+    'new town': [22.5851, 88.4807],
+    'eco space': [22.5851, 88.4807],
+    'howrah': [22.5830, 88.3426],
+    'gariahat': [22.5186, 88.3653],
+    'shyambazar': [22.6030, 88.3713],
+    'dum dum': [22.6420, 88.4312],
+    'behala': [22.4988, 88.3190],
+    'alipore': [22.5320, 88.3300],
+    'esplanade': [22.5645, 88.3520],
+    'science city': [22.5448, 88.3920],
+    'em bypass': [22.5448, 88.3920],
+    'chingrighata': [22.5690, 88.4050],
+    'ultadanga': [22.5950, 88.3850],
+    'rajarhat': [22.6200, 88.4600],
+    'dankuni': [22.6800, 88.3000],
+    'jadavpur': [22.4990, 88.3710],
+    'tollygunge': [22.4940, 88.3450],
+    'airport': [22.6547, 88.4467],
+    'cc2': [22.6180, 88.4550],
+    'ruby': [22.5130, 88.4020],
+  };
+
+  function getKolkataCoords(locName, fallback) {
+    if (!locName) return fallback;
+    const q = String(locName).toLowerCase().trim();
+    for (const key of Object.keys(KOLKATA_LOCATIONS)) {
+      if (q.includes(key)) {
+        return KOLKATA_LOCATIONS[key];
+      }
+    }
+    let hash = 0;
+    for (let i = 0; i < q.length; i++) {
+      hash = (hash << 5) - hash + q.charCodeAt(i);
+      hash |= 0;
+    }
+    const latOffset = ((Math.abs(hash) % 80) - 40) / 1000;
+    const lngOffset = (((Math.abs(hash) >> 2) % 80) - 40) / 1000;
+    return [22.5726 + latOffset, 88.3639 + lngOffset];
+  }
+
   // --- Map Component using Leaflet for Kolkata Transit ---
-  function MapView({ startName, destName, height = '380px', showSimulation = false }) {
+  function MapView({ startName = 'Park Street, Kolkata', destName = 'Sector V, Salt Lake, Kolkata', height = '380px', showSimulation = false }) {
     const mapRef = useRef(null);
 
     useEffect(() => {
@@ -63,7 +109,14 @@
 
       const L = window.L;
       const isLight = document.documentElement.classList.contains('light');
-      const map = L.map(mapRef.current, { zoomControl: false }).setView([22.5650, 88.4000], 12);
+
+      const startC = getKolkataCoords(startName, [22.5510, 88.3524]);
+      const destC = getKolkataCoords(destName, [22.5804, 88.4378]);
+
+      const midLat = (startC[0] + destC[0]) / 2 + 0.005;
+      const midLng = (startC[1] + destC[1]) / 2 + 0.008;
+
+      const map = L.map(mapRef.current, { zoomControl: false, attributionControl: false }).setView(startC, 12);
 
       const tileUrl = isLight
         ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
@@ -75,40 +128,33 @@
 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-      // Kolkata Commute Waypoints
-      const waypoints = [
-        [22.5510, 88.3524], // Park Street
-        [22.5448, 88.3920], // EM Bypass - Science City
-        [22.5690, 88.4050], // Chingrighata / EM Bypass
-        [22.5804, 88.4378], // Salt Lake Sector V
-        [22.5851, 88.4807], // New Town Eco Space
-      ];
+      const waypoints = [startC, [midLat, midLng], destC];
 
       L.polyline(waypoints, { color: isLight ? '#ca8a04' : '#38bdf8', weight: 5, opacity: 0.95 }).addTo(map);
 
       // Start Marker
       const startBorder = isLight ? '#09090b' : '#0f172a';
-      const startHtml = `<div style="background:#10b981;width:24px;height:24px;border-radius:50%;border:3px solid ${startBorder};box-shadow:0 4px 10px rgba(0,0,0,0.5);"></div>`;
-      L.marker([22.5510, 88.3524], {
+      const startHtml = `<div style="background:#10b981;width:24px;height:24px;border-radius:50%;border:3px solid ${startBorder};box-shadow:0 4px 12px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:bold;">A</div>`;
+      L.marker(startC, {
         icon: L.divIcon({ className: 's-pin', html: startHtml, iconSize: [24, 24], iconAnchor: [12, 12] }),
-      }).addTo(map).bindPopup(`<b style="color:#0f172a;">${startName || 'Park Street, Kolkata'}</b>`);
+      }).addTo(map).bindPopup(`<b style="color:#0f172a;">Origin: ${startName}</b>`).openPopup();
 
       // Destination Marker
-      const destHtml = `<div style="background:#ef4444;width:24px;height:24px;border-radius:50%;border:3px solid ${startBorder};box-shadow:0 4px 10px rgba(0,0,0,0.5);"></div>`;
-      L.marker([22.5804, 88.4378], {
+      const destHtml = `<div style="background:#ef4444;width:24px;height:24px;border-radius:50%;border:3px solid ${startBorder};box-shadow:0 4px 12px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:bold;">B</div>`;
+      L.marker(destC, {
         icon: L.divIcon({ className: 'd-pin', html: destHtml, iconSize: [24, 24], iconAnchor: [12, 12] }),
-      }).addTo(map).bindPopup(`<b style="color:#0f172a;">${destName || 'Sector V, Salt Lake, Kolkata'}</b>`);
+      }).addTo(map).bindPopup(`<b style="color:#0f172a;">Destination: ${destName}</b>`);
 
       // Vehicle Marker if in live tracking
       if (showSimulation) {
         const carHtml = `<div style="background:${isLight ? '#eab308' : '#2563eb'};color:${isLight ? '#000' : '#fff'};width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid ${isLight ? '#000' : '#fff'};box-shadow:0 0 15px rgba(234,179,8,0.7);font-size:14px;font-weight:bold;">🚗</div>`;
-        const carMarker = L.marker([22.5690, 88.4050], {
+        const carMarker = L.marker([midLat, midLng], {
           icon: L.divIcon({ className: 'c-pin', html: carHtml, iconSize: [32, 32], iconAnchor: [16, 16] }),
         }).addTo(map);
-        carMarker.bindPopup(`<b style="color:#0f172a;">Live Vehicle: Swift Dzire (WB02AB1234) — EM Bypass</b>`);
+        carMarker.bindPopup(`<b style="color:#0f172a;">Live Fleet: Swift Dzire (WB02AB1234) — En Route</b>`);
       }
 
-      map.fitBounds(L.polyline(waypoints).getBounds().pad(0.2));
+      map.fitBounds(L.polyline(waypoints).getBounds().pad(0.25));
 
       return () => map.remove();
     }, [startName, destName, showSimulation]);
