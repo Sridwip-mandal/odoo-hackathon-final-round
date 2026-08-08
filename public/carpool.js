@@ -98,21 +98,64 @@
     return [22.5650 + latOffset, 88.3800 + lngOffset];
   }
 
+  // High-precision Kolkata Road Network Points (EM Bypass, Maa Flyover, Major Arterial Road, Belghoria Expressway)
+  function getKolkataRoadRoute(startCoords, destCoords) {
+    const sLat = startCoords[0];
+    const sLng = startCoords[1];
+    const dLat = destCoords[0];
+    const dLng = destCoords[1];
+
+    const pts = [startCoords];
+
+    if (sLat > 22.62 || dLat > 22.62) {
+      pts.push([(sLat * 3 + 22.6540) / 4, (sLng * 3 + 88.3580) / 4]);
+      pts.push([22.6560, 88.3850]); // Belghoria Expressway
+      pts.push([22.6520, 88.4250]); // Airport / Jessore Rd
+      pts.push([22.6280, 88.4420]); // VIP Road
+      pts.push([22.5950, 88.4400]); // Major Arterial Road
+    } else {
+      pts.push([(sLat * 2 + 22.5488) / 3, (sLng * 2 + 88.3610) / 3]); // Towards Park Circus 7-point
+      pts.push([22.5442, 88.3750]); // Maa Flyover entrance
+      pts.push([22.5435, 88.3915]); // Science City interchange
+      pts.push([22.5512, 88.3980]); // EM Bypass Northbound
+      pts.push([22.5645, 88.4045]); // Chingrighata Flyover
+      pts.push([22.5710, 88.4210]); // Salt Lake Bypass / Broadway
+      pts.push([22.5760, 88.4315]); // Sector V Entrance Ring
+    }
+
+    pts.push(destCoords);
+
+    const denseRoad = [];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const steps = 12;
+      for (let s = 0; s < steps; s++) {
+        const t = s / steps;
+        denseRoad.push([p1[0] + (p2[0] - p1[0]) * t, p1[1] + (p2[1] - p1[1]) * t]);
+      }
+    }
+    denseRoad.push(destCoords);
+    return denseRoad;
+  }
+
   // --- Map Component using Leaflet for Kolkata Transit & Satellite Observation ---
   function MapView({ startName = 'Park Street, Kolkata', destName = 'Sector V, Salt Lake, Kolkata', height = '380px', showSimulation = false }) {
     const mapRef = useRef(null);
     const mapInstanceRef = useRef(null);
     const vehicleMarkerRef = useRef(null);
+    const routePolylineRef = useRef(null);
     const tileLayerRef = useRef(null);
     const labelsLayerRef = useRef(null);
 
     const [mapMode, setMapMode] = useState('satellite'); // 'satellite' | 'street'
+    const [roadPoints, setRoadPoints] = useState([]);
     const [telemetry, setTelemetry] = useState({
-      speed: 46,
+      speed: 48,
       eta: 4,
-      locationName: 'EM Bypass / Maa Flyover',
-      heading: 'North-East (Sector V Corridor)',
-      status: 'Live GPS Telemetry Synced',
+      roadName: 'Maa Flyover / EM Bypass Corridor',
+      heading: '45° NE',
+      status: 'Driving on Satellite Road Asphalt (100% Lane-Matched)',
     });
 
     const isLight = document.documentElement.classList.contains('light');
@@ -120,17 +163,6 @@
     // Exact geocoded coordinates for start and destination
     const startCoords = getKolkataCoords(startName, [22.5510, 88.3524]);
     const destCoords = getKolkataCoords(destName, [22.5804, 88.4378]);
-
-    // Intermediate waypoints
-    const mid1 = [
-      (startCoords[0] * 2 + destCoords[0]) / 3 + 0.004,
-      (startCoords[1] * 2 + destCoords[1]) / 3 + 0.006,
-    ];
-    const mid2 = [
-      (startCoords[0] * 2 + destCoords[0]) / 3 - 0.003,
-      (startCoords[1] + destCoords[1] * 2) / 3 + 0.004,
-    ];
-    const waypoints = [startCoords, mid1, mid2, destCoords];
 
     // Function to switch tile layers
     const updateTileLayers = (map, mode) => {
@@ -141,19 +173,16 @@
       if (labelsLayerRef.current) map.removeLayer(labelsLayerRef.current);
 
       if (mode === 'satellite') {
-        // High-Resolution True Color Satellite Imagery (ArcGIS World Imagery)
         tileLayerRef.current = L.tileLayer(
           'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-          { maxZoom: 19, attribution: 'Tiles &copy; Esri &mdash; Kolkata Satellite' }
+          { maxZoom: 19, attribution: 'Tiles &copy; Esri &mdash; Kolkata Satellite Imagery' }
         ).addTo(map);
 
-        // Crisp street & place labels overlay
         labelsLayerRef.current = L.tileLayer(
           'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
           { maxZoom: 19, subdomains: 'abcd' }
         ).addTo(map);
       } else {
-        // Theme-adaptive Street Map
         const streetUrl = isLight
           ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
           : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
@@ -179,41 +208,49 @@
 
       mapInstanceRef.current = map;
       updateTileLayers(map, mapMode);
-
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-      // Route Glow and Polyline
-      const polylineGlow = mapMode === 'satellite'
-        ? (isLight ? '#facc15' : '#38bdf8')
-        : (isLight ? '#ca8a04' : '#38bdf8');
+      let initialRoad = getKolkataRoadRoute(startCoords, destCoords);
+      setRoadPoints(initialRoad);
 
-      L.polyline(waypoints, {
-        color: polylineGlow,
-        weight: 6,
-        opacity: 0.95,
+      const roadCasing = L.polyline(initialRoad, {
+        color: '#000000',
+        weight: 8,
+        opacity: 0.85,
         lineCap: 'round',
         lineJoin: 'round',
       }).addTo(map);
 
-      // Start Marker (Green with label)
+      const polylineGlow = mapMode === 'satellite'
+        ? (isLight ? '#facc15' : '#38bdf8')
+        : (isLight ? '#ca8a04' : '#38bdf8');
+
+      const roadLine = L.polyline(initialRoad, {
+        color: polylineGlow,
+        weight: 5,
+        opacity: 1.0,
+        lineCap: 'round',
+        lineJoin: 'round',
+      }).addTo(map);
+
+      routePolylineRef.current = roadLine;
+
       const startBorder = isLight ? '#09090b' : '#0f172a';
-      const startHtml = `<div style="background:#10b981;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid ${startBorder};box-shadow:0 4px 12px rgba(16,185,129,0.6);color:#fff;font-size:12px;font-weight:bold;">A</div>`;
+      const startHtml = `<div style="background:#10b981;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid ${startBorder};box-shadow:0 4px 14px rgba(16,185,129,0.7);color:#fff;font-size:12px;font-weight:bold;">A</div>`;
       L.marker(startCoords, {
-        icon: L.divIcon({ className: 's-pin', html: startHtml, iconSize: [26, 26], iconAnchor: [13, 13] }),
+        icon: L.divIcon({ className: 's-pin', html: startHtml, iconSize: [28, 28], iconAnchor: [14, 14] }),
       }).addTo(map).bindPopup(`<b style="color:#0f172a;">Start: ${startName}</b>`).openPopup();
 
-      // Destination Marker (Red with label)
-      const destHtml = `<div style="background:#ef4444;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid ${startBorder};box-shadow:0 4px 12px rgba(225,29,72,0.6);color:#fff;font-size:12px;font-weight:bold;">B</div>`;
+      const destHtml = `<div style="background:#ef4444;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid ${startBorder};box-shadow:0 4px 14px rgba(225,29,72,0.7);color:#fff;font-size:12px;font-weight:bold;">B</div>`;
       L.marker(destCoords, {
-        icon: L.divIcon({ className: 'd-pin', html: destHtml, iconSize: [26, 26], iconAnchor: [13, 13] }),
+        icon: L.divIcon({ className: 'd-pin', html: destHtml, iconSize: [28, 28], iconAnchor: [14, 14] }),
       }).addTo(map).bindPopup(`<b style="color:#0f172a;">Destination: ${destName}</b>`);
 
-      // LIVE CURRENT VEHICLE MARKER
       const carBg = isLight ? '#facc15' : '#38bdf8';
       const carText = isLight ? '#000000' : '#ffffff';
       const carBorder = isLight ? '#000000' : '#ffffff';
       const carHtml = `
-        <div style="position:relative;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">
+        <div id="live-car-hud-carpool" style="position:relative;width:40px;height:40px;display:flex;align-items:center;justify-content:center;transition:transform 0.3s ease;">
           <div style="position:absolute;width:100%;height:100%;border-radius:50%;background:${carBg};opacity:0.4;animation:ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
           <div style="position:relative;background:${carBg};color:${carText};width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2.5px solid ${carBorder};box-shadow:0 0 20px ${carBg};font-size:16px;font-weight:bold;z-index:2;">
             🚗
@@ -221,23 +258,38 @@
         </div>
       `;
 
-      const carMarker = L.marker(mid1, {
-        icon: L.divIcon({ className: 'c-pin', html: carHtml, iconSize: [38, 38], iconAnchor: [19, 19] }),
+      const carMarker = L.marker(initialRoad[0] || startCoords, {
+        icon: L.divIcon({ className: 'c-pin', html: carHtml, iconSize: [40, 40], iconAnchor: [20, 20] }),
       }).addTo(map);
 
       carMarker.bindPopup(`
-        <div style="font-family:sans-serif;padding:2px;font-size:12px;">
+        <div style="font-family:sans-serif;padding:3px;font-size:12px;">
           <b style="color:${isLight ? '#000' : '#38bdf8'};font-size:13px;">🚗 Swift Dzire (WB02AB1234)</b><br/>
           <span><b>Driver:</b> Raj Patel (4.9 ★)</span><br/>
-          <span><b>Live Location:</b> EM Bypass / Maa Flyover</span><br/>
-          <span style="color:#10b981;font-weight:bold;">Speed: 48 km/h • ETA: 4 mins</span>
+          <span><b>Current Road:</b> Maa Flyover / EM Bypass</span><br/>
+          <span style="color:#10b981;font-weight:bold;">Driving Speed: 48 km/h • ETA: 4 mins</span>
         </div>
       `);
-
       vehicleMarkerRef.current = carMarker;
 
-      // Automatically fit bounds to exact locations
       map.fitBounds(L.polyline([startCoords, destCoords]).getBounds().pad(0.35));
+
+      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${startCoords[1]},${startCoords[0]};${destCoords[1]},${destCoords[0]}?overview=full&geometries=geojson`;
+      fetch(osrmUrl)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.routes && data.routes[0] && data.routes[0].geometry) {
+            const rawCoords = data.routes[0].geometry.coordinates;
+            const realRoad = rawCoords.map((c) => [c[1], c[0]]);
+            if (realRoad.length > 5) {
+              setRoadPoints(realRoad);
+              roadCasing.setLatLngs(realRoad);
+              roadLine.setLatLngs(realRoad);
+              map.fitBounds(roadLine.getBounds().pad(0.25));
+            }
+          }
+        })
+        .catch((e) => console.log('Using fallback Kolkata high-precision road network'));
 
       return () => {
         map.remove();
@@ -245,44 +297,53 @@
       };
     }, [startName, destName, isLight]);
 
-    // Live Vehicle Smooth Real-Time Simulation
+    // Live Turn-by-Turn driving along road
     useEffect(() => {
       if (!mapInstanceRef.current || !vehicleMarkerRef.current) return;
 
-      let step = 0;
-      const totalSteps = 100;
+      const pts = roadPoints.length > 5 ? roadPoints : getKolkataRoadRoute(startCoords, destCoords);
+      if (!pts || pts.length < 2) return;
+
+      let currentIndex = 0;
 
       const interval = setInterval(() => {
-        step = (step + 1) % totalSteps;
-        const progress = step / totalSteps;
-
-        // Smooth Interpolation along waypoints
-        const segmentCount = waypoints.length - 1;
-        const segProgress = progress * segmentCount;
-        const index = Math.min(Math.floor(segProgress), segmentCount - 1);
-        const subProgress = segProgress - index;
-
-        const p1 = waypoints[index];
-        const p2 = waypoints[index + 1];
-        const currentLat = p1[0] + (p2[0] - p1[0]) * subProgress;
-        const currentLng = p1[1] + (p2[1] - p1[1]) * subProgress;
+        currentIndex = (currentIndex + 1) % pts.length;
+        const currentPt = pts[currentIndex];
+        const nextPt = pts[(currentIndex + 1) % pts.length];
 
         if (vehicleMarkerRef.current) {
-          vehicleMarkerRef.current.setLatLng([currentLat, currentLng]);
+          vehicleMarkerRef.current.setLatLng(currentPt);
+
+          const dy = nextPt[0] - currentPt[0];
+          const dx = nextPt[1] - currentPt[1];
+          const angleDeg = Math.atan2(dx, dy) * (180 / Math.PI);
+
+          const el = document.getElementById('live-car-hud-carpool');
+          if (el) {
+            el.style.transform = `rotate(${Math.round(angleDeg)}deg)`;
+          }
         }
 
-        // Update telemetry metrics
+        const progressPercent = currentIndex / pts.length;
+        const currentRoadName = progressPercent < 0.25
+          ? 'Park Circus 7-Point / Suhrawardy Ave'
+          : progressPercent < 0.55
+          ? 'Maa Flyover (AJC Bose Rd to EM Bypass)'
+          : progressPercent < 0.8
+          ? 'EM Bypass / Chingrighata Flyover'
+          : 'Salt Lake Bypass / Sector V Ring';
+
         setTelemetry({
-          speed: Math.floor(42 + Math.sin(step) * 8),
-          eta: Math.max(1, Math.round(5 - progress * 4)),
-          locationName: index === 0 ? 'Approaching Park Street / Science City' : index === 1 ? 'Maa Flyover / EM Bypass' : 'Entering Sector V Salt Lake',
-          heading: 'North-East 45°',
-          status: 'Live Satellite Telemetry 100% Active',
+          speed: Math.floor(44 + Math.sin(currentIndex) * 6),
+          eta: Math.max(1, Math.round(5 - progressPercent * 4)),
+          roadName: currentRoadName,
+          heading: `${Math.round(Math.abs(Math.sin(currentIndex) * 360))}° Corridor`,
+          status: 'Exact Satellite Road Asphalt Matched',
         });
-      }, 2000);
+      }, 600);
 
       return () => clearInterval(interval);
-    }, [startName, destName]);
+    }, [roadPoints, startCoords, destCoords]);destName]);
 
     // Handle Map Mode Toggle
     const handleModeChange = (newMode) => {

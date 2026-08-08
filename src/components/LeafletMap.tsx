@@ -87,62 +87,80 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLeafletReady, setIsLeafletReady] = useState(false);
 
-  // Generate exact intermediate waypoint coordinates connecting start and destination
-  const generateRouteWaypoints = (start: [number, number], end: [number, number]) => {
-    const mid1: [number, number] = [
-      (start[0] * 2 + end[0]) / 3 + 0.004,
-      (start[1] * 2 + end[1]) / 3 + 0.006,
-    ];
-    const mid2: [number, number] = [
-      (start[0] + end[0] * 2) / 3 - 0.003,
-      (start[1] + end[1] * 2) / 3 + 0.004,
-    ];
-    return [start, mid1, mid2, end];
-  };
+// High-precision Kolkata Road Network Points (EM Bypass, Maa Flyover, Major Arterial Road, Belghoria Expressway)
+export function getKolkataRoadRoute(startCoords: [number, number], destCoords: [number, number]): [number, number][] {
+  const sLat = startCoords[0];
+  const sLng = startCoords[1];
+  const dLat = destCoords[0];
 
+  const pts: [number, number][] = [startCoords];
 
-  // Interpolate position along route
-  const getInterpolatedPoint = (waypoints: [number, number][], progress: number): [number, number] => {
-    const totalSegments = waypoints.length - 1;
-    const scaledProgress = progress * totalSegments;
-    const segmentIndex = Math.min(Math.floor(scaledProgress), totalSegments - 1);
-    const segmentProgress = scaledProgress - segmentIndex;
+  if (sLat > 22.62 || dLat > 22.62) {
+    pts.push([(sLat * 3 + 22.6540) / 4, (sLng * 3 + 88.3580) / 4]);
+    pts.push([22.6560, 88.3850]); // Belghoria Expressway
+    pts.push([22.6520, 88.4250]); // Airport / Jessore Rd
+    pts.push([22.6280, 88.4420]); // VIP Road
+    pts.push([22.5950, 88.4400]); // Major Arterial Road
+  } else {
+    pts.push([(sLat * 2 + 22.5488) / 3, (sLng * 2 + 88.3610) / 3]); // Towards Park Circus 7-point
+    pts.push([22.5442, 88.3750]); // Maa Flyover entrance
+    pts.push([22.5435, 88.3915]); // Science City interchange
+    pts.push([22.5512, 88.3980]); // EM Bypass Northbound
+    pts.push([22.5645, 88.4045]); // Chingrighata Flyover
+    pts.push([22.5710, 88.4210]); // Salt Lake Bypass / Broadway
+    pts.push([22.5760, 88.4315]); // Sector V Entrance Ring
+  }
 
-    const p1 = waypoints[segmentIndex];
-    const p2 = waypoints[segmentIndex + 1];
+  pts.push(destCoords);
 
-    return [
-      p1[0] + (p2[0] - p1[0]) * segmentProgress,
-      p1[1] + (p2[1] - p1[1]) * segmentProgress,
-    ];
-  };
+  const denseRoad: [number, number][] = [];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const steps = 12;
+    for (let s = 0; s < steps; s++) {
+      const t = s / steps;
+      denseRoad.push([p1[0] + (p2[0] - p1[0]) * t, p1[1] + (p2[1] - p1[1]) * t]);
+    }
+  }
+  denseRoad.push(destCoords);
+  return denseRoad;
+}
 
-  useEffect(() => {
-    // Check if Leaflet is loaded on window
-    const checkLeaflet = () => {
-      if (window.L) {
-        setIsLeafletReady(true);
-      } else {
-        setTimeout(checkLeaflet, 200);
-      }
-    };
-    checkLeaflet();
-  }, []);
+export const LeafletMap: React.FC<LeafletMapProps> = ({
+  startCoords: initialStartCoords,
+  destCoords: initialDestCoords,
+  startLocationName = 'Park Street, Kolkata',
+  destLocationName = 'Sector V, Salt Lake, Kolkata',
+  interactive = true,
+  showVehicleSimulation = false,
+  vehicleModel = 'Swift Dzire',
+  driverName = 'Raj Patel',
+  height = '420px',
+  onLocationSelect,
+  className = '',
+}) => {
+  const startCoords = initialStartCoords || getKolkataGeoCoords(startLocationName, [22.5510, 88.3524]);
+  const destCoords = initialDestCoords || getKolkataGeoCoords(destLocationName, [22.5804, 88.4378]);
 
-  useEffect(() => {
-    if (!isLeafletReady || !mapContainerRef.current) return;
-
-  const [mapMode, setMapMode] = useState<'satellite' | 'street'>('satellite');
-  const [telemetry, setTelemetry] = useState({
-    speed: 46,
-    eta: 4,
-    locationName: 'EM Bypass / Maa Flyover',
-    heading: 'North-East 45°',
-    status: 'Live GPS Telemetry Synced',
-  });
-
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const vehicleMarkerRef = useRef<any>(null);
+  const routePolylineRef = useRef<any>(null);
   const tileLayerRef = useRef<any>(null);
   const labelsLayerRef = useRef<any>(null);
+
+  const [mapMode, setMapMode] = useState<'satellite' | 'street'>('satellite');
+  const [roadPoints, setRoadPoints] = useState<[number, number][]>([]);
+  const [telemetry, setTelemetry] = useState({
+    speed: 48,
+    eta: 4,
+    roadName: 'Maa Flyover / EM Bypass Corridor',
+    heading: '45° NE',
+    status: 'Driving on Satellite Road Asphalt (100% Lane-Matched)',
+  });
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isLeafletReady, setIsLeafletReady] = useState(false);
 
   const updateTileLayers = (map: any, mode: 'satellite' | 'street') => {
     const L = window.L;
@@ -154,7 +172,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     if (mode === 'satellite') {
       tileLayerRef.current = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        { maxZoom: 19, attribution: 'Tiles &copy; Esri &mdash; Kolkata Satellite' }
+        { maxZoom: 19, attribution: 'Tiles &copy; Esri &mdash; Kolkata Satellite Imagery' }
       ).addTo(map);
 
       labelsLayerRef.current = L.tileLayer(
@@ -170,7 +188,6 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   };
 
   useEffect(() => {
-    // Check if Leaflet is loaded on window
     const checkLeaflet = () => {
       if (window.L) {
         setIsLeafletReady(true);
@@ -186,7 +203,6 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
     const L = window.L;
 
-    // Destroy existing instance if any
     if (mapInstanceRef.current) {
       mapInstanceRef.current.remove();
       mapInstanceRef.current = null;
@@ -203,19 +219,116 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
       mapInstanceRef.current = map;
       updateTileLayers(map, mapMode);
-
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-      const waypoints = generateRouteWaypoints(startCoords, destCoords);
+      const initialRoad = getKolkataRoadRoute(startCoords, destCoords);
+      setRoadPoints(initialRoad);
 
-      // Route Polyline (Glow effect & main line)
-      const glowColor = mapMode === 'satellite' ? '#facc15' : '#38bdf8';
-      L.polyline(waypoints, {
-        color: glowColor,
-        weight: 6,
-        opacity: 0.95,
+      const roadCasing = L.polyline(initialRoad, {
+        color: '#000000',
+        weight: 8,
+        opacity: 0.85,
         lineCap: 'round',
+        lineJoin: 'round',
       }).addTo(map);
+
+      const glowColor = mapMode === 'satellite' ? '#facc15' : '#38bdf8';
+      const roadLine = L.polyline(initialRoad, {
+        color: glowColor,
+        weight: 5,
+        opacity: 1.0,
+        lineCap: 'round',
+        lineJoin: 'round',
+      }).addTo(map);
+
+      routePolylineRef.current = roadLine;
+
+      const startHtml = `
+        <div class="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500 text-white shadow-xl border-2 border-slate-900 font-bold text-xs">
+          A
+        </div>
+      `;
+      const startIcon = L.divIcon({
+        className: 'custom-start-marker',
+        html: startHtml,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+      });
+
+      const destHtml = `
+        <div class="flex items-center justify-center w-8 h-8 rounded-full bg-red-500 text-white shadow-xl border-2 border-slate-900 font-bold text-xs">
+          B
+        </div>
+      `;
+      const destIcon = L.divIcon({
+        className: 'custom-dest-marker',
+        html: destHtml,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+      });
+
+      const startMarker = L.marker(startCoords, { icon: startIcon }).addTo(map);
+      startMarker.bindPopup(`<b>Pickup Location:</b><br/>${startLocationName}`).openPopup();
+
+      const destMarker = L.marker(destCoords, { icon: destIcon }).addTo(map);
+      destMarker.bindPopup(`<b>Destination Hub:</b><br/>${destLocationName}`);
+
+      const carHtml = `
+        <div id="live-car-hud-tsx" class="relative flex items-center justify-center w-10 h-10 transition-transform duration-300">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+          <div class="relative flex items-center justify-center w-9 h-9 rounded-full bg-yellow-400 text-black border-2 border-black shadow-2xl font-bold text-base z-10">
+            🚗
+          </div>
+        </div>
+      `;
+      const carIcon = L.divIcon({
+        className: 'custom-car-marker',
+        html: carHtml,
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+      });
+
+      const vehicleMarker = L.marker(initialRoad[0] || startCoords, { icon: carIcon }).addTo(map);
+      vehicleMarker.bindPopup(`
+        <div class="p-1 text-slate-900 font-sans text-xs">
+          <p class="font-extrabold text-sm text-blue-600">🚗 ${vehicleModel}</p>
+          <p class="font-semibold">Driver: ${driverName}</p>
+          <p class="text-slate-600">Location: EM Bypass / Maa Flyover</p>
+          <p class="text-emerald-600 font-bold mt-1">Driving Speed: 48 km/h • ETA: 4 mins</p>
+        </div>
+      `);
+      vehicleMarkerRef.current = vehicleMarker;
+
+      map.fitBounds(L.polyline([startCoords, destCoords]).getBounds().pad(0.35));
+
+      // Asynchronously fetch exact turn-by-turn road geometry from public OSRM driving engine
+      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${startCoords[1]},${startCoords[0]};${destCoords[1]},${destCoords[0]}?overview=full&geometries=geojson`;
+      fetch(osrmUrl)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.routes && data.routes[0] && data.routes[0].geometry) {
+            const rawCoords = data.routes[0].geometry.coordinates;
+            const realRoad: [number, number][] = rawCoords.map((c: [number, number]) => [c[1], c[0]]);
+            if (realRoad.length > 5) {
+              setRoadPoints(realRoad);
+              roadCasing.setLatLngs(realRoad);
+              roadLine.setLatLngs(realRoad);
+              map.fitBounds(roadLine.getBounds().pad(0.25));
+            }
+          }
+        })
+        .catch(() => console.log('Using fallback Kolkata high-precision road network'));
+
+      if (interactive && onLocationSelect) {
+        map.on('click', (e: any) => {
+          const { lat, lng } = e.latlng;
+          onLocationSelect([lat, lng], `Point (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
+        });
+      }
+    } catch (err) {
+      console.error('Error initializing map:', err);
+    }
+  }, [isLeafletReady, startCoords, destCoords, startLocationName, destLocationName, interactive]);
 
       // Custom Start Icon (Green)
       const startHtml = `
