@@ -185,83 +185,326 @@
     return [22.5650 + latOffset, 88.3800 + lngOffset];
   }
 
-  // --- Leaflet OpenStreetMap View for Kolkata & West Bengal Transit Corridors ---
+  // --- Leaflet OpenStreetMap & Satellite View for Kolkata & West Bengal Transit Corridors ---
   function MapView({ startName = 'Park Street, Kolkata', destName = 'Sector V, Salt Lake, Kolkata', height = '380px', showSimulation = false }) {
     const containerRef = useRef(null);
+    const mapInstanceRef = useRef(null);
+    const vehicleMarkerRef = useRef(null);
+    const tileLayerRef = useRef(null);
+    const labelsLayerRef = useRef(null);
+
+    const [mapMode, setMapMode] = useState('satellite'); // 'satellite' | 'street'
+    const [telemetry, setTelemetry] = useState({
+      speed: 46,
+      eta: 4,
+      locationName: 'EM Bypass / Maa Flyover',
+      heading: 'North-East (Sector V Corridor)',
+      status: 'Live GPS Telemetry Synced',
+    });
+
+    const isLight = document.documentElement.classList.contains('light');
+
+    // Exact geocoded coordinates for start and destination
+    const startCoords = getKolkataCoords(startName, [22.5510, 88.3524]);
+    const destCoords = getKolkataCoords(destName, [22.5804, 88.4378]);
+
+    // Intermediate waypoints
+    const mid1 = [
+      (startCoords[0] * 2 + destCoords[0]) / 3 + 0.004,
+      (startCoords[1] * 2 + destCoords[1]) / 3 + 0.006,
+    ];
+    const mid2 = [
+      (startCoords[0] + destCoords[0] * 2) / 3 - 0.003,
+      (startCoords[1] + destCoords[1] * 2) / 3 + 0.004,
+    ];
+    const waypoints = [startCoords, mid1, mid2, destCoords];
+
+    // Function to switch tile layers
+    const updateTileLayers = (map, mode) => {
+      const L = window.L;
+      if (!L || !map) return;
+
+      if (tileLayerRef.current) map.removeLayer(tileLayerRef.current);
+      if (labelsLayerRef.current) map.removeLayer(labelsLayerRef.current);
+
+      if (mode === 'satellite') {
+        // High-Resolution True Color Satellite Imagery (ArcGIS World Imagery)
+        tileLayerRef.current = L.tileLayer(
+          'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+          { maxZoom: 19, attribution: 'Tiles &copy; Esri &mdash; Kolkata Satellite' }
+        ).addTo(map);
+
+        // Crisp street & place labels overlay
+        labelsLayerRef.current = L.tileLayer(
+          'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
+          { maxZoom: 19, subdomains: 'abcd' }
+        ).addTo(map);
+      } else {
+        // Theme-adaptive Street Map
+        const streetUrl = isLight
+          ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+          : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+
+        tileLayerRef.current = L.tileLayer(streetUrl, {
+          maxZoom: 19,
+          subdomains: 'abcd',
+        }).addTo(map);
+      }
+    };
 
     useEffect(() => {
       if (!containerRef.current || !window.L) return;
 
       const L = window.L;
-      const isLight = document.documentElement.classList.contains('light');
-
-      // Exact geocoded coordinates for start and destination
-      const startCoords = getKolkataCoords(startName, [22.5510, 88.3524]);
-      const destCoords = getKolkataCoords(destName, [22.5804, 88.4378]);
-
-      // Initialize map centered between start and dest
       const centerLat = (startCoords[0] + destCoords[0]) / 2;
       const centerLng = (startCoords[1] + destCoords[1]) / 2;
-      const map = L.map(containerRef.current, { zoomControl: false, attributionControl: false }).setView([centerLat, centerLng], 12);
 
-      // Select map tile provider based on theme
-      const tileUrl = isLight
-        ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-        : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+      const map = L.map(containerRef.current, {
+        zoomControl: false,
+        attributionControl: false,
+      }).setView([centerLat, centerLng], 12);
 
-      L.tileLayer(tileUrl, {
-        maxZoom: 19,
-      }).addTo(map);
+      mapInstanceRef.current = map;
+      updateTileLayers(map, mapMode);
 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-      // Calculate realistic waypoints connecting the exact start and dest coordinates
-      const mid1 = [
-        (startCoords[0] * 2 + destCoords[0]) / 3 + 0.004,
-        (startCoords[1] * 2 + destCoords[1]) / 3 + 0.006,
-      ];
-      const mid2 = [
-        (startCoords[0] + destCoords[0] * 2) / 3 - 0.003,
-        (startCoords[1] + destCoords[1] * 2) / 3 + 0.004,
-      ];
-      const waypoints = [startCoords, mid1, mid2, destCoords];
+      // Route Glow and Polyline
+      const polylineGlow = mapMode === 'satellite'
+        ? (isLight ? '#facc15' : '#38bdf8')
+        : (isLight ? '#ca8a04' : '#38bdf8');
 
-      const polylineColor = isLight ? '#ca8a04' : '#38bdf8';
-      L.polyline(waypoints, { color: polylineColor, weight: 5, opacity: 0.95, lineCap: 'round' }).addTo(map);
+      L.polyline(waypoints, {
+        color: polylineGlow,
+        weight: 6,
+        opacity: 0.95,
+        lineCap: 'round',
+        lineJoin: 'round',
+      }).addTo(map);
 
-      // Start Marker (Green with label)
+      // Start Marker (A - Green)
       const startBorderColor = isLight ? '#09090b' : '#0f172a';
-      const startHtml = `<div style="background:#10b981;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid ${startBorderColor};box-shadow:0 4px 10px rgba(0,0,0,0.4);color:#fff;font-size:11px;font-weight:bold;">A</div>`;
+      const startHtml = `<div style="background:#10b981;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid ${startBorderColor};box-shadow:0 4px 12px rgba(16,185,129,0.6);color:#fff;font-size:12px;font-weight:bold;">A</div>`;
       L.marker(startCoords, {
-        icon: L.divIcon({ className: 'spin', html: startHtml, iconSize: [24, 24], iconAnchor: [12, 12] }),
-      }).addTo(map).bindPopup(`<b>Start: ${startName}</b>`).openPopup();
+        icon: L.divIcon({ className: 'spin', html: startHtml, iconSize: [26, 26], iconAnchor: [13, 13] }),
+      }).addTo(map).bindPopup(`<b>Start Location:</b> ${startName}`).openPopup();
 
-      // Destination Marker (Red with label)
-      const destHtml = `<div style="background:#e11d48;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid ${startBorderColor};box-shadow:0 4px 10px rgba(0,0,0,0.4);color:#fff;font-size:11px;font-weight:bold;">B</div>`;
+      // Destination Marker (B - Red)
+      const destHtml = `<div style="background:#e11d48;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid ${startBorderColor};box-shadow:0 4px 12px rgba(225,29,72,0.6);color:#fff;font-size:12px;font-weight:bold;">B</div>`;
       L.marker(destCoords, {
-        icon: L.divIcon({ className: 'dpin', html: destHtml, iconSize: [24, 24], iconAnchor: [12, 12] }),
-      }).addTo(map).bindPopup(`<b>Destination: ${destName}</b>`);
+        icon: L.divIcon({ className: 'dpin', html: destHtml, iconSize: [26, 26], iconAnchor: [13, 13] }),
+      }).addTo(map).bindPopup(`<b>Destination Hub:</b> ${destName}`);
 
-      if (showSimulation) {
-        const carHtml = `<div style="background:${isLight ? '#eab308' : '#2563eb'};color:${isLight ? '#000' : '#fff'};width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid ${isLight ? '#000' : '#fff'};box-shadow:0 0 15px rgba(234,179,8,0.7);font-size:14px;font-weight:bold;">🚗</div>`;
-        const carMarker = L.marker(mid1, {
-          icon: L.divIcon({ className: 'cpin', html: carHtml, iconSize: [32, 32], iconAnchor: [16, 16] }),
-        }).addTo(map);
-        carMarker.bindPopup(`<b>Live Fleet: Swift Dzire (WB02AB1234) — En Route</b>`);
-      }
+      // LIVE CURRENT VEHICLE MARKER
+      const carBg = isLight ? '#facc15' : '#38bdf8';
+      const carText = isLight ? '#000000' : '#ffffff';
+      const carBorder = isLight ? '#000000' : '#ffffff';
+      const carHtml = `
+        <div style="position:relative;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">
+          <div style="position:absolute;width:100%;height:100%;border-radius:50%;background:${carBg};opacity:0.4;animation:ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+          <div style="position:relative;background:${carBg};color:${carText};width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2.5px solid ${carBorder};box-shadow:0 0 20px ${carBg};font-size:16px;font-weight:bold;z-index:2;">
+            🚗
+          </div>
+        </div>
+      `;
 
-      // Automatically fit bounds to exact locations
+      const carMarker = L.marker(mid1, {
+        icon: L.divIcon({ className: 'cpin', html: carHtml, iconSize: [38, 38], iconAnchor: [19, 19] }),
+      }).addTo(map);
+
+      carMarker.bindPopup(`
+        <div style="font-family:sans-serif;padding:2px;font-size:12px;">
+          <b style="color:${isLight ? '#000' : '#38bdf8'};font-size:13px;">🚗 Swift Dzire (WB02AB1234)</b><br/>
+          <span><b>Driver:</b> Raj Patel (4.9 ★)</span><br/>
+          <span><b>Live Location:</b> EM Bypass / Maa Flyover</span><br/>
+          <span style="color:#10b981;font-weight:bold;">Speed: 48 km/h • ETA: 4 mins</span>
+        </div>
+      `);
+
+      vehicleMarkerRef.current = carMarker;
+
+      // Fit bounds to the route
       map.fitBounds(L.polyline([startCoords, destCoords]).getBounds().pad(0.35));
 
-      return () => map.remove();
-    }, [startName, destName, showSimulation]);
+      return () => {
+        map.remove();
+        mapInstanceRef.current = null;
+      };
+    }, [startName, destName, isLight]);
 
-    const isLightContainer = document.documentElement.classList.contains('light');
-    return React.createElement('div', {
-      ref: containerRef,
-      className: isLightContainer ? 'w-full rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-xl relative z-0' : 'w-full rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-2xl relative z-0',
-      style: { height },
-    });
+    // Live Vehicle Smooth Real-Time Simulation
+    useEffect(() => {
+      if (!mapInstanceRef.current || !vehicleMarkerRef.current) return;
+
+      let step = 0;
+      const totalSteps = 100;
+
+      const interval = setInterval(() => {
+        step = (step + 1) % totalSteps;
+        const progress = step / totalSteps;
+
+        // Smooth Interpolation along waypoints
+        const segmentCount = waypoints.length - 1;
+        const segProgress = progress * segmentCount;
+        const index = Math.min(Math.floor(segProgress), segmentCount - 1);
+        const subProgress = segProgress - index;
+
+        const p1 = waypoints[index];
+        const p2 = waypoints[index + 1];
+        const currentLat = p1[0] + (p2[0] - p1[0]) * subProgress;
+        const currentLng = p1[1] + (p2[1] - p1[1]) * subProgress;
+
+        if (vehicleMarkerRef.current) {
+          vehicleMarkerRef.current.setLatLng([currentLat, currentLng]);
+        }
+
+        // Update telemetry metrics
+        setTelemetry({
+          speed: Math.floor(42 + Math.sin(step) * 8),
+          eta: Math.max(1, Math.round(5 - progress * 4)),
+          locationName: index === 0 ? 'Approaching Park Street / Science City' : index === 1 ? 'Maa Flyover / EM Bypass' : 'Entering Sector V Salt Lake',
+          heading: 'North-East 45°',
+          status: 'Live Satellite Telemetry 100% Active',
+        });
+      }, 2000);
+
+      return () => clearInterval(interval);
+    }, [startName, destName]);
+
+    // Handle Map Mode Toggle
+    const handleModeChange = (newMode) => {
+      setMapMode(newMode);
+      if (mapInstanceRef.current) {
+        updateTileLayers(mapInstanceRef.current, newMode);
+      }
+    };
+
+    // Locate Vehicle in Real-Time
+    const handleLocateVehicle = () => {
+      if (mapInstanceRef.current && vehicleMarkerRef.current) {
+        const pos = vehicleMarkerRef.current.getLatLng();
+        mapInstanceRef.current.flyTo(pos, 15, { animate: true, duration: 1.5 });
+        vehicleMarkerRef.current.openPopup();
+      }
+    };
+
+    return React.createElement(
+      'div',
+      {
+        className: `w-full rounded-3xl border overflow-hidden shadow-2xl relative z-0 ${
+          isLight ? 'border-slate-200 bg-white' : 'border-slate-800 bg-slate-950'
+        }`,
+        style: { height },
+      },
+      // Map DOM container
+      React.createElement('div', { ref: containerRef, className: 'w-full h-full z-0' }),
+
+      // Top-Right Interactive Map Controls & Satellite Switcher
+      React.createElement(
+        'div',
+        { className: 'absolute top-3 right-3 z-10 flex items-center gap-1.5' },
+        React.createElement(
+          'button',
+          {
+            onClick: () => handleModeChange('satellite'),
+            className: `px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1 shadow-lg transition backdrop-blur-md ${
+              mapMode === 'satellite'
+                ? isLight
+                  ? 'bg-yellow-400 text-black border border-yellow-500 ring-2 ring-yellow-400/40'
+                  : 'bg-cyan-500 text-slate-950 font-extrabold ring-2 ring-cyan-400/50'
+                : isLight
+                ? 'bg-white/90 text-slate-700 hover:bg-white border border-slate-200'
+                : 'bg-slate-900/90 text-slate-300 hover:bg-slate-800 border border-slate-800'
+            }`,
+            title: 'High-Resolution Satellite Earth Imagery',
+          },
+          '🛰️ Satellite'
+        ),
+        React.createElement(
+          'button',
+          {
+            onClick: () => handleModeChange('street'),
+            className: `px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1 shadow-lg transition backdrop-blur-md ${
+              mapMode === 'street'
+                ? isLight
+                  ? 'bg-yellow-400 text-black border border-yellow-500 ring-2 ring-yellow-400/40'
+                  : 'bg-blue-600 text-white font-extrabold ring-2 ring-blue-400/50'
+                : isLight
+                ? 'bg-white/90 text-slate-700 hover:bg-white border border-slate-200'
+                : 'bg-slate-900/90 text-slate-300 hover:bg-slate-800 border border-slate-800'
+            }`,
+            title: 'Theme-Adaptive Street Vector Map',
+          },
+          '🗺️ Streets'
+        ),
+        React.createElement(
+          'button',
+          {
+            onClick: handleLocateVehicle,
+            className: `px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 shadow-lg transition backdrop-blur-md ${
+              isLight
+                ? 'bg-white/90 hover:bg-yellow-100 text-black border border-slate-200'
+                : 'bg-slate-900/90 hover:bg-slate-800 text-cyan-300 border border-slate-800'
+            }`,
+            title: 'Center Camera on Current Vehicle Location',
+          },
+          '🎯 Locate Vehicle'
+        )
+      ),
+
+      // Top-Left Live Telemetry HUD Overlay
+      React.createElement(
+        'div',
+        {
+          className: `absolute top-3 left-3 z-10 p-3 rounded-2xl border shadow-xl backdrop-blur-xl text-xs max-w-xs transition-colors ${
+            isLight
+              ? 'bg-white/95 border-slate-200 text-slate-900'
+              : 'bg-slate-950/90 border-slate-800 text-white'
+          }`,
+        },
+        React.createElement(
+          'div',
+          { className: 'flex items-center gap-2 font-extrabold mb-1' },
+          React.createElement('span', { className: 'flex h-2.5 w-2.5 relative' },
+            React.createElement('span', { className: 'animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75' }),
+            React.createElement('span', { className: 'relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500' })
+          ),
+          React.createElement('span', { className: isLight ? 'text-black' : 'text-cyan-300' }, 'Live Vehicle Telemetry')
+        ),
+        React.createElement('div', { className: `text-[11px] font-medium truncate ${isLight ? 'text-slate-600' : 'text-slate-400'}` }, telemetry.locationName),
+        React.createElement(
+          'div',
+          { className: 'flex items-center gap-2 mt-1.5 pt-1.5 border-t border-slate-200/50 font-mono text-[11px]' },
+          React.createElement('span', { className: `font-bold ${isLight ? 'text-emerald-700' : 'text-emerald-400'}` }, `${telemetry.speed} km/h`),
+          React.createElement('span', { className: 'text-slate-400' }, '•'),
+          React.createElement('span', { className: `font-bold ${isLight ? 'text-yellow-800' : 'text-yellow-400'}` }, `ETA: ${telemetry.eta} min`),
+          React.createElement('span', { className: 'text-slate-400' }, '•'),
+          React.createElement('span', { className: isLight ? 'text-slate-700' : 'text-cyan-400' }, 'Swift Dzire')
+        )
+      ),
+
+      // Bottom Route Summary Pill
+      React.createElement(
+        'div',
+        { className: 'absolute bottom-3 left-3 z-10' },
+        React.createElement(
+          'div',
+          {
+            className: `px-3.5 py-2 rounded-2xl border shadow-xl backdrop-blur-xl text-xs flex items-center gap-2 font-bold ${
+              isLight
+                ? 'bg-white/95 border-slate-200 text-black'
+                : 'bg-slate-950/90 border-slate-800 text-white'
+            }`,
+          },
+          React.createElement('span', { className: 'text-emerald-500' }, '●'),
+          React.createElement('span', { className: 'truncate max-w-[110px]' }, startName.split(',')[0]),
+          React.createElement('span', { className: 'text-slate-400' }, '→'),
+          React.createElement('span', { className: 'text-rose-500' }, '●'),
+          React.createElement('span', { className: 'truncate max-w-[110px]' }, destName.split(',')[0]),
+          React.createElement('span', { className: `ml-1 text-[10px] uppercase px-1.5 py-0.5 rounded font-mono ${mapMode === 'satellite' ? (isLight ? 'bg-yellow-200 text-yellow-950' : 'bg-cyan-950 text-cyan-300 border border-cyan-500/30') : isLight ? 'bg-slate-100 text-slate-700' : 'bg-slate-800 text-slate-300'}` }, mapMode)
+        )
+      )
+    );
   }
 
   // --- SVG Charts with Theme Adaptive Palette ---

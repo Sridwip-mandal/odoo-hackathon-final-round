@@ -132,6 +132,58 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   useEffect(() => {
     if (!isLeafletReady || !mapContainerRef.current) return;
 
+  const [mapMode, setMapMode] = useState<'satellite' | 'street'>('satellite');
+  const [telemetry, setTelemetry] = useState({
+    speed: 46,
+    eta: 4,
+    locationName: 'EM Bypass / Maa Flyover',
+    heading: 'North-East 45°',
+    status: 'Live GPS Telemetry Synced',
+  });
+
+  const tileLayerRef = useRef<any>(null);
+  const labelsLayerRef = useRef<any>(null);
+
+  const updateTileLayers = (map: any, mode: 'satellite' | 'street') => {
+    const L = window.L;
+    if (!L || !map) return;
+
+    if (tileLayerRef.current) map.removeLayer(tileLayerRef.current);
+    if (labelsLayerRef.current) map.removeLayer(labelsLayerRef.current);
+
+    if (mode === 'satellite') {
+      tileLayerRef.current = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        { maxZoom: 19, attribution: 'Tiles &copy; Esri &mdash; Kolkata Satellite' }
+      ).addTo(map);
+
+      labelsLayerRef.current = L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
+        { maxZoom: 19, subdomains: 'abcd' }
+      ).addTo(map);
+    } else {
+      tileLayerRef.current = L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+        { maxZoom: 19, subdomains: 'abcd' }
+      ).addTo(map);
+    }
+  };
+
+  useEffect(() => {
+    // Check if Leaflet is loaded on window
+    const checkLeaflet = () => {
+      if (window.L) {
+        setIsLeafletReady(true);
+      } else {
+        setTimeout(checkLeaflet, 200);
+      }
+    };
+    checkLeaflet();
+  }, []);
+
+  useEffect(() => {
+    if (!isLeafletReady || !mapContainerRef.current) return;
+
     const L = window.L;
 
     // Destroy existing instance if any
@@ -141,44 +193,34 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     }
 
     try {
+      const centerLat = (startCoords[0] + destCoords[0]) / 2;
+      const centerLng = (startCoords[1] + destCoords[1]) / 2;
+
       const map = L.map(mapContainerRef.current, {
         zoomControl: false,
         attributionControl: false,
-      }).setView(startCoords, 11);
+      }).setView([centerLat, centerLng], 12);
 
-      // Dark theme map tiles (CartoDB Dark Matter / OpenStreetMap)
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-        subdomains: 'abcd',
-      }).addTo(map);
+      mapInstanceRef.current = map;
+      updateTileLayers(map, mapMode);
 
-      // Custom Zoom Control
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
       const waypoints = generateRouteWaypoints(startCoords, destCoords);
 
       // Route Polyline (Glow effect & main line)
-      const glowLine = L.polyline(waypoints, {
-        color: '#3b82f6',
-        weight: 8,
-        opacity: 0.35,
+      const glowColor = mapMode === 'satellite' ? '#facc15' : '#38bdf8';
+      L.polyline(waypoints, {
+        color: glowColor,
+        weight: 6,
+        opacity: 0.95,
         lineCap: 'round',
       }).addTo(map);
 
-      const mainLine = L.polyline(waypoints, {
-        color: '#2563eb',
-        weight: 4,
-        opacity: 0.9,
-        dashArray: showVehicleSimulation ? '6, 8' : undefined,
-        lineCap: 'round',
-      }).addTo(map);
-
-      routePolylineRef.current = mainLine;
-
-      // Custom HTML Icons
+      // Custom Start Icon (Green)
       const startHtml = `
-        <div class="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/50 border-2 border-slate-900 animate-pulse">
-          <div class="w-3 h-3 bg-white rounded-full"></div>
+        <div class="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500 text-white shadow-xl border-2 border-slate-900 font-bold text-xs">
+          A
         </div>
       `;
       const startIcon = L.divIcon({
@@ -188,9 +230,10 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         iconAnchor: [16, 16],
       });
 
+      // Custom Destination Icon (Red)
       const destHtml = `
-        <div class="flex items-center justify-center w-8 h-8 rounded-full bg-red-500 text-white shadow-lg shadow-red-500/50 border-2 border-slate-900">
-          <div class="w-3.5 h-3.5 bg-white rounded-sm"></div>
+        <div class="flex items-center justify-center w-8 h-8 rounded-full bg-red-500 text-white shadow-xl border-2 border-slate-900 font-bold text-xs">
+          B
         </div>
       `;
       const destIcon = L.divIcon({
@@ -201,87 +244,40 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       });
 
       const startMarker = L.marker(startCoords, { icon: startIcon }).addTo(map);
-      startMarker.bindPopup(`
-        <div class="p-2 text-slate-900 font-sans">
-          <p class="text-xs font-bold text-emerald-600 uppercase tracking-wider">Pickup Point</p>
-          <p class="text-sm font-semibold">${startLocationName}</p>
-        </div>
-      `);
+      startMarker.bindPopup(`<b>Pickup Location:</b> ${startLocationName}`).openPopup();
 
       const destMarker = L.marker(destCoords, { icon: destIcon }).addTo(map);
-      destMarker.bindPopup(`
-        <div class="p-2 text-slate-900 font-sans">
-          <p class="text-xs font-bold text-red-600 uppercase tracking-wider">Destination</p>
-          <p class="text-sm font-semibold">${destLocationName}</p>
-        </div>
-      `);
+      destMarker.bindPopup(`<b>Destination Hub:</b> ${destLocationName}`);
 
-      // Vehicle Marker (if simulated tracking)
-      if (showVehicleSimulation) {
-        const vehiclePos = getInterpolatedPoint(waypoints, simProgress);
-        const carHtml = `
-          <div class="relative flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white shadow-xl shadow-blue-500/60 border-2 border-white transform transition-transform duration-500">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17a2 2 0 100-4 2 2 0 000 4zm8 0a2 2 0 100-4 2 2 0 000 4zm-9-5h10l-1-6H6l-1 6zm-2 2h14v2H5v-2z" />
-            </svg>
-            <span class="absolute -top-1 -right-1 flex h-3 w-3">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
-            </span>
+      // LIVE MOVING VEHICLE MARKER WITH RADAR PULSE
+      const carHtml = `
+        <div class="relative flex items-center justify-center w-10 h-10">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+          <div class="relative flex items-center justify-center w-9 h-9 rounded-full bg-yellow-400 text-black border-2 border-black shadow-2xl font-bold text-base">
+            🚗
           </div>
-        `;
-        const carIcon = L.divIcon({
-          className: 'custom-car-marker',
-          html: carHtml,
-          iconSize: [40, 40],
-          iconAnchor: [20, 20],
-        });
-
-        const vehicleMarker = L.marker(vehiclePos, { icon: carIcon }).addTo(map);
-        vehicleMarker.bindPopup(`
-          <div class="p-2 text-slate-900 font-sans">
-            <p class="text-xs font-bold text-blue-600 uppercase tracking-wider">Live Vehicle</p>
-            <p class="text-sm font-semibold">${driverName} (${vehicleModel})</p>
-            <p class="text-xs text-slate-600 mt-0.5">Speed: 48 km/h • ETA: 5 min</p>
-          </div>
-        `);
-        vehicleMarkerRef.current = vehicleMarker;
-      }
-
-      // Add nearby pooling vehicles
-      const nearbyCarHtml = `
-        <div class="flex items-center justify-center w-7 h-7 rounded-full bg-slate-800 text-blue-400 border border-blue-500/40 shadow-md">
-          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.04 3H5.81l1.04-3zM19 17H5v-4.66l.12-.34h13.77l.11.34V17z" />
-          </svg>
         </div>
       `;
-      const nearbyIcon = L.divIcon({
-        className: 'nearby-marker',
-        html: nearbyCarHtml,
-        iconSize: [28, 28],
-        iconAnchor: [14, 14],
+      const carIcon = L.divIcon({
+        className: 'custom-car-marker',
+        html: carHtml,
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
       });
 
-      // Sample nearby verified carpool drivers
-      const nearbyPositions: { coords: [number, number]; title: string }[] = [
-        { coords: [23.0550, 72.5210], title: 'Swapnil Shaw (Tata Nexon EV) - 3 Seats' },
-        { coords: [23.1300, 72.5800], title: 'Bhavya (Honda City) - 2 Seats' },
-      ];
+      const vehicleMarker = L.marker(waypoints[1], { icon: carIcon }).addTo(map);
+      vehicleMarker.bindPopup(`
+        <div class="p-1 text-slate-900 font-sans text-xs">
+          <p class="font-extrabold text-sm text-blue-600">🚗 ${vehicleModel}</p>
+          <p class="font-semibold">Driver: ${driverName}</p>
+          <p class="text-slate-600">Location: EM Bypass / Maa Flyover</p>
+          <p class="text-emerald-600 font-bold mt-1">Speed: 48 km/h • ETA: 4 mins</p>
+        </div>
+      `);
+      vehicleMarkerRef.current = vehicleMarker;
 
-      nearbyPositions.forEach((pos) => {
-        const m = L.marker(pos.coords, { icon: nearbyIcon }).addTo(map);
-        m.bindPopup(`
-          <div class="p-2 text-slate-900 font-sans">
-            <p class="text-xs font-bold text-slate-600 uppercase">Available Pooled Ride</p>
-            <p class="text-xs font-medium text-slate-800">${pos.title}</p>
-          </div>
-        `);
-      });
-
-      // Fit bounds with padding
-      const group = new L.featureGroup([startMarker, destMarker, glowLine]);
-      map.fitBounds(group.getBounds().pad(0.2));
+      // Fit bounds to exact route
+      map.fitBounds(L.polyline([startCoords, destCoords]).getBounds().pad(0.35));
 
       // Click to select location
       if (interactive && onLocationSelect) {
@@ -290,35 +286,58 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           onLocationSelect([lat, lng], `Point (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
         });
       }
-
-      mapInstanceRef.current = map;
     } catch (err) {
       console.error('Error initializing map:', err);
     }
-  }, [isLeafletReady, startCoords, destCoords, startLocationName, destLocationName, showVehicleSimulation, interactive]);
+  }, [isLeafletReady, startCoords, destCoords, startLocationName, destLocationName, interactive]);
 
-  // Live simulation tick
+  // Smooth live vehicle animation
   useEffect(() => {
-    if (!showVehicleSimulation || !mapInstanceRef.current || !vehicleMarkerRef.current || !window.L) return;
+    if (!mapInstanceRef.current || !vehicleMarkerRef.current || !window.L) return;
+
+    let step = 0;
+    const totalSteps = 100;
+    const waypoints = generateRouteWaypoints(startCoords, destCoords);
 
     const interval = setInterval(() => {
-      setSimProgress((prev) => {
-        const next = prev >= 0.95 ? 0.1 : prev + 0.04;
-        const waypoints = generateRouteWaypoints(startCoords, destCoords);
-        const nextPoint = getInterpolatedPoint(waypoints, next);
-        if (vehicleMarkerRef.current) {
-          vehicleMarkerRef.current.setLatLng(nextPoint);
-        }
-        return next;
+      step = (step + 1) % totalSteps;
+      const progress = step / totalSteps;
+
+      const nextPoint = getInterpolatedPoint(waypoints, progress);
+      if (vehicleMarkerRef.current) {
+        vehicleMarkerRef.current.setLatLng(nextPoint);
+      }
+
+      setTelemetry({
+        speed: Math.floor(42 + Math.sin(step) * 8),
+        eta: Math.max(1, Math.round(5 - progress * 4)),
+        locationName: progress < 0.35 ? 'EM Bypass / Maa Flyover' : progress < 0.7 ? 'Chingrighata Flyover' : 'Approaching Sector V Salt Lake',
+        heading: 'North-East 45°',
+        status: 'Live Satellite Telemetry 100% Synced',
       });
-    }, 2500);
+    }, 2000);
 
     return () => clearInterval(interval);
-  }, [showVehicleSimulation, startCoords, destCoords]);
+  }, [startCoords, destCoords]);
+
+  const handleModeChange = (mode: 'satellite' | 'street') => {
+    setMapMode(mode);
+    if (mapInstanceRef.current) {
+      updateTileLayers(mapInstanceRef.current, mode);
+    }
+  };
+
+  const handleLocateVehicle = () => {
+    if (mapInstanceRef.current && vehicleMarkerRef.current) {
+      const pos = vehicleMarkerRef.current.getLatLng();
+      mapInstanceRef.current.flyTo(pos, 15, { animate: true, duration: 1.5 });
+      vehicleMarkerRef.current.openPopup();
+    }
+  };
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950/80 shadow-2xl transition-all ${
+      className={`relative overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 shadow-2xl transition-all ${
         isFullscreen ? 'fixed inset-4 z-[9999] h-[calc(100vh-2rem)]' : ''
       } ${className}`}
       style={{ height: isFullscreen ? 'calc(100vh - 2rem)' : height }}
@@ -326,23 +345,40 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       {/* Map Container */}
       <div ref={mapContainerRef} className="w-full h-full z-0" />
 
-      {/* Floating Map HUD overlay */}
-      <div className="absolute top-3 left-3 z-10 flex flex-wrap items-center gap-2 pointer-events-none">
-        <div className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 backdrop-blur-md text-xs font-medium text-slate-200 shadow-lg">
-          <Navigation className="w-3.5 h-3.5 text-blue-400 animate-spin" style={{ animationDuration: '6s' }} />
-          <span>Gujarat IT Corridor Route</span>
-        </div>
-
-        {showVehicleSimulation && (
-          <div className="pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-950/90 border border-emerald-500/40 backdrop-blur-md text-xs font-semibold text-emerald-300 shadow-lg animate-pulse">
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span>Live Vehicle Telemetry Active</span>
-          </div>
-        )}
-      </div>
-
-      {/* Controls Overlay */}
+      {/* Top-Right Interactive Map Controls & Satellite Switcher */}
       <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
+        <button
+          onClick={() => handleModeChange('satellite')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1 shadow-lg transition backdrop-blur-md ${
+            mapMode === 'satellite'
+              ? 'bg-yellow-400 text-black border border-yellow-500 ring-2 ring-yellow-400/40'
+              : 'bg-slate-900/90 text-slate-300 hover:bg-slate-800 border border-slate-800'
+          }`}
+          title="High-Resolution Satellite Earth Imagery"
+        >
+          🛰️ Satellite
+        </button>
+
+        <button
+          onClick={() => handleModeChange('street')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1 shadow-lg transition backdrop-blur-md ${
+            mapMode === 'street'
+              ? 'bg-blue-600 text-white font-extrabold ring-2 ring-blue-400/50'
+              : 'bg-slate-900/90 text-slate-300 hover:bg-slate-800 border border-slate-800'
+          }`}
+          title="Theme-Adaptive Street Vector Map"
+        >
+          🗺️ Streets
+        </button>
+
+        <button
+          onClick={handleLocateVehicle}
+          className="px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 shadow-lg transition backdrop-blur-md bg-slate-900/90 hover:bg-slate-800 text-cyan-300 border border-slate-800"
+          title="Center Camera on Current Vehicle Location"
+        >
+          🎯 Locate Vehicle
+        </button>
+
         <button
           onClick={() => setIsFullscreen(!isFullscreen)}
           className="p-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white shadow-lg backdrop-blur-md transition"
@@ -352,23 +388,34 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         </button>
       </div>
 
+      {/* Top-Left Live Telemetry HUD Overlay */}
+      <div className="absolute top-3 left-3 z-10 p-3 rounded-2xl border border-slate-800/80 bg-slate-950/90 shadow-2xl backdrop-blur-xl text-xs max-w-xs text-white">
+        <div className="flex items-center gap-2 font-extrabold mb-1">
+          <span className="flex h-2.5 w-2.5 relative">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+          </span>
+          <span className="text-cyan-300">Live Vehicle Telemetry</span>
+        </div>
+        <div className="text-[11px] font-medium text-slate-400 truncate">{telemetry.locationName}</div>
+        <div className="flex items-center gap-2 mt-1.5 pt-1.5 border-t border-slate-800 font-mono text-[11px]">
+          <span className="font-bold text-emerald-400">{telemetry.speed} km/h</span>
+          <span className="text-slate-500">•</span>
+          <span className="font-bold text-yellow-400">ETA: {telemetry.eta} min</span>
+          <span className="text-slate-500">•</span>
+          <span className="text-cyan-400">{vehicleModel}</span>
+        </div>
+      </div>
+
       {/* Bottom Route Summary Pill */}
-      <div className="absolute bottom-3 left-3 right-3 sm:left-4 sm:right-auto z-10 pointer-events-none">
-        <div className="pointer-events-auto flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 rounded-xl bg-slate-900/95 border border-slate-800/90 backdrop-blur-xl shadow-2xl text-xs text-slate-300 max-w-lg">
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
-            <span className="font-semibold text-white truncate max-w-[140px]">{startLocationName.split(',')[0]}</span>
-            <span className="text-slate-500">→</span>
-            <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
-            <span className="font-semibold text-white truncate max-w-[140px]">{destLocationName.split(',')[0]}</span>
-          </div>
-          <div className="flex items-center gap-2 sm:ml-auto text-slate-400 font-mono text-[11px]">
-            <span className="text-cyan-400 font-semibold">24.2 km</span>
-            <span>•</span>
-            <span className="text-emerald-400 font-semibold">~34 mins</span>
-            <span>•</span>
-            <span className="text-purple-400 font-semibold">₹120/seat</span>
-          </div>
+      <div className="absolute bottom-3 left-3 z-10">
+        <div className="px-3.5 py-2 rounded-2xl border border-slate-800/90 bg-slate-950/90 shadow-2xl backdrop-blur-xl text-xs flex items-center gap-2 font-bold text-white">
+          <span className="text-emerald-400">●</span>
+          <span className="truncate max-w-[120px]">{startLocationName.split(',')[0]}</span>
+          <span className="text-slate-500">→</span>
+          <span className="text-rose-400">●</span>
+          <span className="truncate max-w-[120px]">{destLocationName.split(',')[0]}</span>
+          <span className="ml-1 text-[10px] uppercase px-1.5 py-0.5 rounded font-mono bg-cyan-950 text-cyan-300 border border-cyan-500/30">{mapMode}</span>
         </div>
       </div>
     </div>
