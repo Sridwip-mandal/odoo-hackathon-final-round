@@ -7,9 +7,9 @@
   const ReactDOM = window.ReactDOM || (window.ReactDOM = {});
   const { useState, useEffect, useRef } = React;
 
-  // Safe global store fallback
-  const CARPOOL = window.CARPOOL || (window.CARPOOL = {});
-  const store = CARPOOL.store || (CARPOOL.store = {
+  // Master Global Store
+  window.CARPOOL = window.CARPOOL || {};
+  const masterStore = {
     getCurrentUser: () => {
       try {
         const u = localStorage.getItem('carpool_user');
@@ -142,9 +142,9 @@
       try { localStorage.setItem('carpool_feedback', JSON.stringify(f)); } catch (e) {}
     },
     addFeedback: (item) => {
-      const list = store.getFeedback();
+      const list = masterStore.getFeedback();
       list.unshift(item);
-      store.setFeedback(list);
+      masterStore.setFeedback(list);
       try { fetch('/api/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) }).catch(() => {}); } catch (e) {}
     },
     getTickets: () => {
@@ -195,83 +195,84 @@
       try { localStorage.setItem('carpool_tickets', JSON.stringify(t)); } catch (e) {}
     },
     addTicket: (t) => {
-      const list = store.getTickets();
+      const list = masterStore.getTickets();
       list.unshift(t);
-      store.setTickets(list);
+      masterStore.setTickets(list);
       try { fetch('/api/tickets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(t) }).catch(() => {}); } catch (e) {}
     },
     updateTicket: (updated) => {
-      const list = store.getTickets().map((t) => (t.id === updated.id ? updated : t));
-      store.setTickets(list);
+      const list = masterStore.getTickets().map((t) => (t.id === updated.id ? updated : t));
+      masterStore.setTickets(list);
     },
     addTicketReply: (ticketId, reply) => {
-      const list = store.getTickets().map((t) => {
+      const list = masterStore.getTickets().map((t) => {
         if (t.id === ticketId) {
           const reps = t.replies || [];
           return { ...t, replies: [...reps, reply], updatedAt: new Date().toISOString() };
         }
         return t;
       });
-      store.setTickets(list);
+      masterStore.setTickets(list);
       try { fetch(`/api/tickets/${ticketId}/replies`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reply) }).catch(() => {}); } catch (e) {}
     },
     getUserRideHistory: (userId) => {
-      const uId = userId || store.getCurrentUser().id;
-      const allTrips = store.getTrips();
-      const allRides = store.getRides();
+      const curUser = masterStore.getCurrentUser() || { id: 'usr-1', name: 'Raj Patel', rating: 4.9 };
+      const uId = userId || curUser.id || 'usr-1';
+      const allTrips = masterStore.getTrips() || [];
+      const allRides = masterStore.getRides() || [];
 
       const passengerTrips = allTrips.map((t) => ({
-        id: t.id,
-        rideId: t.rideId,
+        id: t.id || `trip-${Math.random()}`,
+        rideId: t.rideId || t.id,
         type: 'passenger',
-        driverName: t.driverName,
-        driverPhone: t.driverPhone,
-        driverRating: t.driverRating,
+        driverName: t.driverName || 'Driver',
+        driverPhone: t.driverPhone || '+91 98765 43210',
+        driverRating: Number(t.driverRating) || 4.9,
         driverAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-        riderName: store.getCurrentUser().name,
+        riderName: curUser.name,
         riderId: uId,
-        startLocation: t.startLocation,
-        destinationLocation: t.destinationLocation,
-        vehicleModel: t.vehicleModel,
-        registrationNumber: t.registrationNumber,
-        date: t.date,
-        time: t.time,
-        fare: t.fare,
-        seats: t.seatNumber ? 1 : 1,
-        status: t.status,
+        startLocation: t.startLocation || 'Kolkata Tech Hub (Sector V)',
+        destinationLocation: t.destinationLocation || 'Park Street, Kolkata',
+        vehicleModel: t.vehicleModel || 'Honda City',
+        registrationNumber: t.registrationNumber || 'WB02AB1234',
+        date: t.date || 'Today',
+        time: t.time || '08:30 AM',
+        fare: Number(t.fare) || 45,
+        seats: Number(t.seats) || 1,
+        status: t.status || 'completed',
         paymentStatus: t.paymentStatus || 'paid',
         paymentMethod: t.paymentMethod || 'UPI',
-        distanceKm: 14.8,
-        bookingDate: t.date,
-        rating: 5.0,
+        distanceKm: Number(t.distanceKm) || 14.8,
+        bookingDate: t.date || 'Today',
+        rating: Number(t.rating) || 5.0,
       }));
 
       const driverRides = allRides
-        .filter((r) => r.driverName === store.getCurrentUser().name || r.driverId === uId)
+        .filter((r) => r.driverName === curUser.name || r.driverId === uId)
         .map((r) => ({
-          id: r.id,
+          id: r.id || `ride-${Math.random()}`,
           rideId: r.id,
           type: 'driver',
-          driverName: r.driverName,
-          driverPhone: r.driverPhone,
-          driverRating: r.driverRating,
-          driverAvatar: r.driverAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+          driverName: r.driverName || curUser.name,
+          driverPhone: r.driverPhone || curUser.mobile || '+91 98765 43210',
+          driverRating: Number(r.driverRating) || curUser.rating || 4.9,
+          driverAvatar: r.driverAvatar || curUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
           riderName: 'Corporate Staff (2 Pooled)',
           riderId: 'pool-staff',
-          startLocation: r.startLocation,
-          destinationLocation: r.destinationLocation,
-          vehicleModel: r.vehicleModel,
-          registrationNumber: r.registrationNumber,
-          date: r.departureDate,
-          time: r.departureTime,
-          fare: r.farePerSeat * 2,
+          startLocation: r.startLocation || 'Park Street, Kolkata',
+          destinationLocation: r.destinationLocation || 'Sector V, Salt Lake, Kolkata',
+          vehicleModel: r.vehicleModel || 'Sedan',
+          registrationNumber: r.registrationNumber || 'WB02AB1234',
+          date: r.departureDate || 'Today',
+          time: r.departureTime || '09:00 AM',
+          fare: (Number(r.farePerSeat) || 45) * 2,
           seats: 2,
-          status: r.status === 'scheduled' ? 'upcoming' : r.status,
+          status: r.status === 'scheduled' ? 'upcoming' : (r.status || 'active'),
           paymentStatus: 'paid',
           paymentMethod: 'Wallet Credit',
           distanceKm: 16.5,
-          bookingDate: r.departureDate,
-          rating: r.driverRating || 4.9,
+          bookingDate: r.departureDate || 'Today',
+          rating: Number(r.driverRating) || 4.9,
         }));
 
       const combined = [...passengerTrips, ...driverRides];
@@ -282,14 +283,15 @@
       return Array.from(map.values());
     },
     calculateUserAnalytics: (userId, range = 'all') => {
-      const history = store.getUserRideHistory(userId);
-      const user = store.getCurrentUser();
+      const history = masterStore.getUserRideHistory(userId) || [];
+      const user = masterStore.getCurrentUser() || { rating: 4.9 };
 
       let filtered = history;
       if (range === '7d') filtered = history.filter((_, i) => i < 2 || i % 2 === 0);
       else if (range === '30d') filtered = history.filter((_, i) => i < 6);
       else if (range === '3m') filtered = history.filter((_, i) => i < 15);
       else if (range === '6m') filtered = history.filter((_, i) => i < 25);
+      else if (range === '1y') filtered = history.filter((_, i) => i < 40);
 
       const totalRides = filtered.length;
       const completedRides = filtered.filter((r) => r.status === 'completed').length;
@@ -319,7 +321,10 @@
         co2SavedKg,
       };
     },
-  });
+  };
+
+  const store = Object.assign(window.CARPOOL.store || {}, masterStore);
+  window.CARPOOL.store = store;
 
   const COMPONENTS = window.CARPOOL_COMPONENTS || (window.CARPOOL_COMPONENTS = {});
   const MapView = COMPONENTS.MapView || function ({ startName, destName, height = '320px' }) {
@@ -2768,7 +2773,25 @@
       // 8.6. REPORTS PAGE (/reports) — Comprehensive Real-Data Analytics
       // =========================================================================
       if (route === '/reports') {
-        const metrics = store.calculateUserAnalytics(currentUser.id, reportRange);
+        const calcFn = (store && typeof store.calculateUserAnalytics === 'function')
+          ? store.calculateUserAnalytics
+          : (window.CARPOOL?.store && typeof window.CARPOOL.store.calculateUserAnalytics === 'function')
+          ? window.CARPOOL.store.calculateUserAnalytics
+          : null;
+
+        const metrics = (calcFn ? calcFn(currentUser?.id, reportRange) : null) || {
+          totalRides: 0,
+          completedRides: 0,
+          cancelledRides: 0,
+          pendingRides: 0,
+          totalDistanceKm: 0,
+          totalSpent: 0,
+          totalEarned: 0,
+          averageFare: 0,
+          averageRating: 5.0,
+          avgDistanceKm: 0,
+          co2SavedKg: 0,
+        };
         const hasData = metrics.totalRides > 0;
 
         const timeFilterOptions = [
@@ -5835,8 +5858,48 @@
     );
   }
 
+  class ErrorBoundary extends React.Component {
+    constructor(props) {
+      super(props);
+      this.state = { hasError: false, error: null };
+    }
+    static getDerivedStateFromError(error) {
+      return { hasError: true, error };
+    }
+    componentDidCatch(error, errorInfo) {
+      console.error('[CARPOOL ErrorBoundary Caught Exception]:', error, errorInfo);
+    }
+    render() {
+      if (this.state.hasError) {
+        return React.createElement(
+          'div',
+          { className: 'min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 text-center space-y-4' },
+          React.createElement('div', { className: 'w-14 h-14 rounded-2xl bg-yellow-400/20 text-yellow-400 flex items-center justify-center text-2xl font-bold border border-yellow-400/30' }, '⚠️'),
+          React.createElement('h1', { className: 'text-xl font-bold text-white' }, 'Carpool Kolkata — Session Restored'),
+          React.createElement('p', { className: 'text-xs text-slate-400 max-w-md leading-relaxed' }, 'An unexpected component state occurred, but your session and data remain safe. Click below to return directly to the main dashboard.'),
+          React.createElement(
+            'button',
+            {
+              onClick: () => {
+                window.location.hash = '#/';
+                window.location.reload();
+              },
+              className: 'px-5 py-2.5 rounded-xl bg-yellow-400 text-black font-bold text-xs hover:bg-yellow-300 transition shadow-lg shadow-yellow-400/20',
+            },
+            'Return to Kolkata Dashboard'
+          )
+        );
+      }
+      return this.props.children;
+    }
+  }
+
   function App() {
-    return React.createElement(ToastProvider, null, React.createElement(MainApp));
+    return React.createElement(
+      ErrorBoundary,
+      null,
+      React.createElement(ToastProvider, null, React.createElement(MainApp))
+    );
   }
 
   // Mount to DOM

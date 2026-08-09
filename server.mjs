@@ -200,6 +200,109 @@ const server = http.createServer(async (req, res) => {
   if (pathname.startsWith('/api/')) {
     const user = authenticateRequest(req);
 
+    // --- POST /api/employees/bulk ---
+    if (pathname === '/api/employees/bulk' && method === 'POST') {
+      const body = await parseJsonBody(req);
+      if (!Array.isArray(body)) {
+        return sendJson(res, 400, { error: 'Expected an array of employee objects.' });
+      }
+
+      const insertStmt = db.prepare(`
+        INSERT INTO employees (id, name, email, password_hash, role, wallet_balance, access_status, department, mobile, employee_id, manager, office_location, avatar, rating, total_trips, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      
+      const pwdHash = hashPassword('password123');
+      const now = new Date().toISOString();
+      let successCount = 0;
+      let errors = [];
+
+      db.transaction(() => {
+        for (const emp of body) {
+          try {
+            const existing = db.prepare('SELECT id FROM employees WHERE employee_id = ?').get(emp.id);
+            if (existing) {
+              errors.push(`Duplicate Employee ID: ${emp.id}`);
+              continue;
+            }
+            
+            const realId = 'emp-' + Math.random().toString(36).substr(2, 9);
+            insertStmt.run(
+              realId,
+              emp.name,
+              emp.email.toLowerCase(),
+              pwdHash,
+              (emp.role && emp.role.toLowerCase() === 'admin') ? 'admin' : 'employee',
+              parseFloat(emp.wallet) || 0,
+              'granted',
+              emp.dept || 'Unknown',
+              emp.phone || '',
+              emp.id,
+              'Admin User',
+              emp.hub || 'Unknown',
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random`,
+              5.0,
+              0,
+              now
+            );
+            successCount++;
+          } catch (err) {
+            errors.push(`Failed for ${emp.name}: ${err.message}`);
+          }
+        }
+      })();
+      return sendJson(res, 200, { success: true, count: successCount, errors });
+    }
+
+    // --- POST /api/vehicles/bulk ---
+    if (pathname === '/api/vehicles/bulk' && method === 'POST') {
+      const body = await parseJsonBody(req);
+      if (!Array.isArray(body)) {
+        return sendJson(res, 400, { error: 'Expected an array of vehicle objects.' });
+      }
+
+      const insertStmt = db.prepare(`
+        INSERT INTO vehicles (id, owner_id, model, registration_plate, capacity, fuel_type, color, driver_name, status, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      
+      const now = new Date().toISOString();
+      let successCount = 0;
+      let errors = [];
+
+      db.transaction(() => {
+        for (const veh of body) {
+          try {
+            const existing = db.prepare('SELECT id FROM vehicles WHERE registration_plate = ?').get(veh.plate);
+            if (existing) {
+              errors.push(`Duplicate Plate Number: ${veh.plate}`);
+              continue;
+            }
+            
+            const owner = db.prepare('SELECT id FROM employees WHERE name LIKE ?').get('%' + veh.owner + '%');
+            const ownerId = owner ? owner.id : 'emp-admin';
+            
+            const realId = 'veh-' + Math.random().toString(36).substr(2, 9);
+            insertStmt.run(
+              realId,
+              ownerId,
+              veh.model,
+              veh.plate,
+              parseInt(veh.capacity, 10) || 4,
+              veh.fuel || 'Petrol',
+              veh.color || 'Unknown',
+              veh.owner,
+              'active',
+              now
+            );
+            successCount++;
+          } catch (err) {
+            errors.push(`Failed for ${veh.plate}: ${err.message}`);
+          }
+        }
+      })();
+      return sendJson(res, 200, { success: true, count: successCount, errors });
+    }
     // --- 1. POST /api/auth/signup ---
     if (pathname === '/api/auth/signup' && method === 'POST') {
       const body = await parseJsonBody(req);

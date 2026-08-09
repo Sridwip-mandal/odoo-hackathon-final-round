@@ -7,15 +7,14 @@ import {
   UserPlus,
   Search,
   Eye,
-  Edit,
   UserX,
   Trash2,
-  CheckCircle2,
-  XCircle,
+  PlusCircle,
 } from 'lucide-react';
 import { storage } from '../utils/storage';
 import { useToast } from '../components/Toast';
 import { AddEmployeeModal } from '../components/AddEmployeeModal';
+import { BulkImportEmployeesModal } from '../components/BulkImportEmployeesModal';
 import { ConfirmationDialog } from '../components/ConfirmationDialog';
 import { User } from '../types';
 
@@ -23,6 +22,7 @@ export const AdminEmployeesPage: React.FC = () => {
   const toast = useToast();
   const [users, setUsers] = useState(storage.getUsers());
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
@@ -64,12 +64,12 @@ export const AdminEmployeesPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="p-4 sm:p-5 rounded-2xl border border-slate-800 bg-slate-900 shadow-xl space-y-1">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Employees</span>
-          <h3 className="text-3xl font-extrabold text-blue-400 font-mono">48</h3>
+          <h3 className="text-3xl font-extrabold text-blue-400 font-mono">{users.length}</h3>
         </div>
 
         <div className="p-4 sm:p-5 rounded-2xl border border-slate-800 bg-slate-900 shadow-xl space-y-1">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Registered Vehicles</span>
-          <h3 className="text-3xl font-extrabold text-cyan-400 font-mono">22</h3>
+          <h3 className="text-3xl font-extrabold text-cyan-400 font-mono">{storage.getVehicles().length}</h3>
         </div>
 
         <div className="p-4 sm:p-5 rounded-2xl border border-slate-800 bg-slate-900 shadow-xl space-y-1">
@@ -101,13 +101,22 @@ export const AdminEmployeesPage: React.FC = () => {
           </NavLink>
         </div>
 
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition hover:scale-105"
-        >
-          <UserPlus className="w-4 h-4" />
-          <span>+ Add Employee</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowBulkImportModal(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs shadow-lg transition hover:scale-105"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>Import Employees</span>
+          </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition hover:scale-105"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>+ Add Employee</span>
+          </button>
+        </div>
       </div>
 
       {/* Search Filter */}
@@ -130,12 +139,12 @@ export const AdminEmployeesPage: React.FC = () => {
           <table className="w-full text-left text-xs">
             <thead className="border-b border-slate-800 bg-slate-950/70 text-slate-400 font-semibold uppercase text-[10px]">
               <tr>
-                <th className="py-4 px-5">Name</th>
-                <th className="py-4 px-5">Email</th>
+                <th className="py-4 px-5">Employee</th>
+                <th className="py-4 px-5">Employee ID</th>
                 <th className="py-4 px-5">Department</th>
-                <th className="py-4 px-5">Manager</th>
-                <th className="py-4 px-5">Location</th>
-                <th className="py-4 px-5">Platform Access</th>
+                <th className="py-4 px-5">Office Hub</th>
+                <th className="py-4 px-5">Wallet</th>
+                <th className="py-4 px-5">Access</th>
                 <th className="py-4 px-5 text-right">Actions</th>
               </tr>
             </thead>
@@ -150,9 +159,9 @@ export const AdminEmployeesPage: React.FC = () => {
                       <span>{emp.name}</span>
                     </td>
 
-                    {/* Email */}
+                    {/* Employee ID */}
                     <td className="py-4 px-5 text-slate-300 font-sans text-xs">
-                      {emp.email}
+                      {emp.employeeId || 'N/A'}
                     </td>
 
                     {/* Department */}
@@ -160,17 +169,17 @@ export const AdminEmployeesPage: React.FC = () => {
                       {emp.department}
                     </td>
 
-                    {/* Manager */}
-                    <td className="py-4 px-5 text-slate-400 font-sans">
-                      {emp.manager}
-                    </td>
-
-                    {/* Location */}
+                    {/* Office Hub */}
                     <td className="py-4 px-5 text-slate-300 font-sans">
-                      {emp.officeLocation.split(' ')[0]}
+                      {emp.officeLocation}
                     </td>
 
-                    {/* Platform Access Badge matching wireframe: [Granted] / [Revoked] */}
+                    {/* Wallet */}
+                    <td className="py-4 px-5 text-emerald-400 font-mono font-bold">
+                      ₹{emp.walletBalance?.toLocaleString('en-IN') || '0'}
+                    </td>
+
+                    {/* Platform Access Badge */}
                     <td className="py-4 px-5">
                       <button
                         onClick={() => handleToggleAccess(emp)}
@@ -217,6 +226,15 @@ export const AdminEmployeesPage: React.FC = () => {
         <AddEmployeeModal
           isOpen={showAddModal}
           onClose={() => setShowAddModal(false)}
+          onSuccess={refreshUsers}
+        />
+      )}
+
+      {/* Bulk Import Employees Modal */}
+      {showBulkImportModal && (
+        <BulkImportEmployeesModal
+          isOpen={showBulkImportModal}
+          onClose={() => setShowBulkImportModal(false)}
           onSuccess={refreshUsers}
         />
       )}

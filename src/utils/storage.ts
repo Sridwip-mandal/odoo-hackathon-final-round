@@ -27,6 +27,7 @@ import {
   INITIAL_COMPANY_SETTINGS,
   INITIAL_MONTHLY_SUMMARY,
 } from '../data/mockData';
+import { BULK_USERS, BULK_VEHICLES } from '../data/bulkData';
 
 const INITIAL_FEEDBACK: FeedbackItem[] = [
   {
@@ -161,6 +162,21 @@ export const storage = {
   },
 
   init: () => {
+    // Inject bulk data
+    if (!localStorage.getItem('CARPOOL_SEEDED_BULK_V4')) {
+      localStorage.setItem('CARPOOL_SEEDED_BULK_V4', 'true');
+      
+      const existingUsers = storage.get<User[]>(STORAGE_KEYS.USERS, INITIAL_USERS);
+      const existingUserIds = new Set(existingUsers.map(u => u.id));
+      const usersToAdd = BULK_USERS.filter(u => !existingUserIds.has(u.id));
+      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify([...existingUsers, ...usersToAdd]));
+
+      const existingVehicles = storage.get<Vehicle[]>(STORAGE_KEYS.VEHICLES, INITIAL_VEHICLES);
+      const existingVehicleRegs = new Set(existingVehicles.map(v => v.registrationNumber));
+      const vehiclesToAdd = BULK_VEHICLES.filter(v => !existingVehicleRegs.has(v.registrationNumber));
+      localStorage.setItem(STORAGE_KEYS.VEHICLES, JSON.stringify([...existingVehicles, ...vehiclesToAdd]));
+    }
+
     if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
       storage.set(STORAGE_KEYS.USERS, INITIAL_USERS);
     }
@@ -630,3 +646,5 @@ export const storage = {
   },
 };
 
+// Auto-initialize on import
+storage.init();

@@ -19,7 +19,6 @@ export const EmployeeSidebar: React.FC = () => {
   const links = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/find-ride', label: 'Find Ride', icon: Search },
-    { to: '/my-trips', label: 'My Trips', icon: CalendarDays },
     { to: '/offer-ride', label: 'Offer Ride', icon: PlusCircle },
     { to: '/ride-history', label: 'Ride History', icon: History },
     { to: '/my-vehicle', label: 'My Vehicle', icon: Car },

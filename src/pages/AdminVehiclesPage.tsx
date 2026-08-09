@@ -12,6 +12,7 @@ import {
 import { storage } from '../utils/storage';
 import { useToast } from '../components/Toast';
 import { AddVehicleModal } from '../components/AddVehicleModal';
+import { BulkImportVehiclesModal } from '../components/BulkImportVehiclesModal';
 import { ConfirmationDialog } from '../components/ConfirmationDialog';
 import { Vehicle } from '../types';
 
@@ -19,6 +20,7 @@ export const AdminVehiclesPage: React.FC = () => {
   const toast = useToast();
   const [vehicles, setVehicles] = useState(storage.getVehicles());
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
 
@@ -58,12 +60,12 @@ export const AdminVehiclesPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="p-4 sm:p-5 rounded-2xl border border-slate-800 bg-slate-900 shadow-xl space-y-1">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Employees</span>
-          <h3 className="text-3xl font-extrabold text-blue-400 font-mono">48</h3>
+          <h3 className="text-3xl font-extrabold text-blue-400 font-mono">{storage.getUsers().length}</h3>
         </div>
 
         <div className="p-4 sm:p-5 rounded-2xl border border-slate-800 bg-slate-900 shadow-xl space-y-1">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Registered Vehicles</span>
-          <h3 className="text-3xl font-extrabold text-cyan-400 font-mono">22</h3>
+          <h3 className="text-3xl font-extrabold text-cyan-400 font-mono">{vehicles.length}</h3>
         </div>
 
         <div className="p-4 sm:p-5 rounded-2xl border border-slate-800 bg-slate-900 shadow-xl space-y-1">
@@ -95,13 +97,22 @@ export const AdminVehiclesPage: React.FC = () => {
           </NavLink>
         </div>
 
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition hover:scale-105"
-        >
-          <PlusCircle className="w-4 h-4" />
-          <span>+ Add Vehicle</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowBulkImportModal(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs shadow-lg transition hover:scale-105"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>Import Vehicles</span>
+          </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition hover:scale-105"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>+ Add Vehicle</span>
+          </button>
+        </div>
       </div>
 
       {/* Vehicles Table matching wireframe page 20 */}
@@ -110,10 +121,11 @@ export const AdminVehiclesPage: React.FC = () => {
           <table className="w-full text-left text-xs">
             <thead className="border-b border-slate-800 bg-slate-950/70 text-slate-400 font-semibold uppercase text-[10px]">
               <tr>
-                <th className="py-4 px-5">Registration Number</th>
-                <th className="py-4 px-5">Model</th>
-                <th className="py-4 px-5">Seating Capacity</th>
-                <th className="py-4 px-5">Driver</th>
+                <th className="py-4 px-5">Vehicle Model</th>
+                <th className="py-4 px-5">WB Plate Number</th>
+                <th className="py-4 px-5">Assigned Driver</th>
+                <th className="py-4 px-5">Capacity</th>
+                <th className="py-4 px-5">Fuel Type</th>
                 <th className="py-4 px-5">Status</th>
                 <th className="py-4 px-5 text-right">Actions</th>
               </tr>
@@ -123,27 +135,32 @@ export const AdminVehiclesPage: React.FC = () => {
                 const isApproved = veh.status === 'approved';
                 return (
                   <tr key={veh.id} className="hover:bg-slate-800/40 transition">
-                    {/* Registration Number matching wireframe: GJ01AB1234 */}
-                    <td className="py-4 px-5 font-bold text-cyan-300 text-sm font-mono">
-                      {veh.registrationNumber}
-                    </td>
-
-                    {/* Model matching wireframe: Swift Dzire */}
+                    {/* Vehicle Model */}
                     <td className="py-4 px-5 font-semibold text-white font-sans">
                       {veh.model}
                     </td>
 
-                    {/* Seating Capacity matching wireframe: 4 */}
-                    <td className="py-4 px-5 text-slate-300">
-                      {veh.seatingCapacity}
+                    {/* WB Plate Number */}
+                    <td className="py-4 px-5 font-bold text-cyan-300 text-sm font-mono">
+                      {veh.registrationNumber}
                     </td>
 
-                    {/* Driver matching wireframe: Raj Patel */}
+                    {/* Assigned Driver */}
                     <td className="py-4 px-5 text-slate-300 font-sans font-semibold">
                       {veh.driverName}
                     </td>
 
-                    {/* Status matching wireframe: [Active] / [Inactive] */}
+                    {/* Capacity */}
+                    <td className="py-4 px-5 text-slate-300">
+                      {veh.seatingCapacity}
+                    </td>
+
+                    {/* Fuel Type */}
+                    <td className="py-4 px-5 text-slate-400">
+                      {veh.fuelType || 'Petrol'}
+                    </td>
+
+                    {/* Status */}
                     <td className="py-4 px-5">
                       <button
                         onClick={() => handleToggleStatus(veh)}
@@ -189,6 +206,15 @@ export const AdminVehiclesPage: React.FC = () => {
         <AddVehicleModal
           isOpen={showAddModal}
           onClose={() => setShowAddModal(false)}
+          onSuccess={refreshVehicles}
+        />
+      )}
+
+      {/* Bulk Import Vehicles Modal */}
+      {showBulkImportModal && (
+        <BulkImportVehiclesModal
+          isOpen={showBulkImportModal}
+          onClose={() => setShowBulkImportModal(false)}
           onSuccess={refreshVehicles}
         />
       )}

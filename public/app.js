@@ -540,6 +540,175 @@
     getSummary() {
       return store.get('cp_summary', INITIAL_MONTHLY_SUMMARY);
     },
+    getPaymentMethods() {
+      return store.get('cp_pms', INITIAL_PAYMENT_METHODS);
+    },
+    setPaymentMethods(arr) {
+      store.set('cp_pms', arr);
+    },
+    getFeedback() {
+      return store.get('cp_feedback', [
+        { id: 'fb-1', userName: 'Raj Patel', userEmail: 'raj.patel@odoo.com', category: 'Ride Experience', rating: 5, message: 'Great corporate carpooling system! The Sector V route matching was very smooth.', createdAt: '2026-07-28T09:30:00Z' },
+        { id: 'fb-2', userName: 'Krishna Singh', userEmail: 'krishna.singh@odoo.com', category: 'Payment', rating: 5, message: 'Instant UPI auto-credit and wallet top-up worked perfectly.', createdAt: '2026-08-01T14:15:00Z' },
+      ]);
+    },
+    setFeedback(arr) {
+      store.set('cp_feedback', arr);
+    },
+    addFeedback(item) {
+      const list = store.getFeedback();
+      list.unshift(item);
+      store.setFeedback(list);
+    },
+    getTickets() {
+      return store.get('cp_tickets', [
+        {
+          id: 'tkt-1',
+          ticketNumber: 'CK-10245',
+          userId: 'usr-1',
+          userName: 'Raj Patel',
+          userEmail: 'raj.patel@odoo.com',
+          subject: 'Request for New Town Action Area II Pickup Landmark',
+          category: 'Ride Issues',
+          description: 'Could we add a designated carpool pickup point near New Town Eco Space Gate 3?',
+          priority: 'Medium',
+          status: 'IN PROGRESS',
+          createdAt: '2026-08-02T10:00:00Z',
+          updatedAt: '2026-08-03T11:30:00Z',
+          replies: [
+            { id: 'rep-1', ticketId: 'tkt-1', senderName: 'Raj Patel', senderRole: 'employee', message: 'Could we add a designated carpool pickup point near New Town Eco Space Gate 3?', createdAt: '2026-08-02T10:00:00Z' },
+            { id: 'rep-2', ticketId: 'tkt-1', senderName: 'Mobility Support Desk', senderRole: 'admin', message: 'Hello Raj, we have forwarded this to our Kolkata Transport Ops team to verify.', createdAt: '2026-08-03T11:30:00Z' }
+          ]
+        }
+      ]);
+    },
+    setTickets(arr) {
+      store.set('cp_tickets', arr);
+    },
+    addTicket(t) {
+      const list = store.getTickets();
+      list.unshift(t);
+      store.setTickets(list);
+    },
+    updateTicket(updated) {
+      const list = store.getTickets().map((t) => (t.id === updated.id ? updated : t));
+      store.setTickets(list);
+    },
+    addTicketReply(ticketId, reply) {
+      const list = store.getTickets().map((t) => {
+        if (t.id === ticketId) {
+          const reps = t.replies || [];
+          return { ...t, replies: [...reps, reply], updatedAt: new Date().toISOString() };
+        }
+        return t;
+      });
+      store.setTickets(list);
+    },
+    getUserRideHistory(userId) {
+      const uId = userId || store.getCurrentUser()?.id || 'usr-1';
+      const allTrips = store.getTrips() || [];
+      const allRides = store.getRides() || [];
+      const curUser = store.getCurrentUser() || { name: 'Raj Patel', rating: 4.9 };
+
+      const passengerTrips = allTrips.map((t) => ({
+        id: t.id,
+        rideId: t.rideId || t.id,
+        type: 'passenger',
+        driverName: t.driverName || 'Driver',
+        driverPhone: t.driverPhone || '+91 98765 43210',
+        driverRating: t.driverRating || 4.9,
+        driverAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+        riderName: curUser.name,
+        riderId: uId,
+        startLocation: t.startLocation || 'Kolkata',
+        destinationLocation: t.destinationLocation || 'Sector V',
+        vehicleModel: t.vehicleModel || 'Honda City',
+        registrationNumber: t.registrationNumber || 'WB02AB1234',
+        date: t.date || 'Today',
+        time: t.time || '08:30 AM',
+        fare: Number(t.fare) || 45,
+        seats: 1,
+        status: t.status || 'completed',
+        paymentStatus: t.paymentStatus || 'paid',
+        paymentMethod: t.paymentMethod || 'UPI',
+        distanceKm: Number(t.distanceKm) || 14.8,
+        bookingDate: t.date || 'Today',
+        rating: 5.0,
+      }));
+
+      const driverRides = allRides
+        .filter((r) => r.driverName === curUser.name || r.driverId === uId)
+        .map((r) => ({
+          id: r.id,
+          rideId: r.id,
+          type: 'driver',
+          driverName: r.driverName,
+          driverPhone: r.driverPhone || '+91 98765 43210',
+          driverRating: r.driverRating || 4.9,
+          driverAvatar: r.driverAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+          riderName: 'Corporate Staff (2 Pooled)',
+          riderId: 'pool-staff',
+          startLocation: r.startLocation || 'Kolkata',
+          destinationLocation: r.destinationLocation || 'Sector V',
+          vehicleModel: r.vehicleModel || 'Sedan',
+          registrationNumber: r.registrationNumber || 'WB02AB1234',
+          date: r.departureDate || 'Today',
+          time: r.departureTime || '09:00 AM',
+          fare: (Number(r.farePerSeat) || 45) * 2,
+          seats: 2,
+          status: r.status === 'scheduled' ? 'upcoming' : (r.status || 'active'),
+          paymentStatus: 'paid',
+          paymentMethod: 'Wallet Credit',
+          distanceKm: 16.5,
+          bookingDate: r.departureDate || 'Today',
+          rating: r.driverRating || 4.9,
+        }));
+
+      const combined = [...passengerTrips, ...driverRides];
+      const map = new Map();
+      combined.forEach((item) => {
+        if (!map.has(item.id)) map.set(item.id, item);
+      });
+      return Array.from(map.values());
+    },
+    calculateUserAnalytics(userId, range = 'all') {
+      const history = store.getUserRideHistory(userId) || [];
+      const user = store.getCurrentUser() || { rating: 4.9 };
+
+      let filtered = history;
+      if (range === '7d') filtered = history.filter((_, i) => i < 2 || i % 2 === 0);
+      else if (range === '30d') filtered = history.filter((_, i) => i < 6);
+      else if (range === '3m') filtered = history.filter((_, i) => i < 15);
+      else if (range === '6m') filtered = history.filter((_, i) => i < 25);
+
+      const totalRides = filtered.length;
+      const completedRides = filtered.filter((r) => r.status === 'completed').length;
+      const cancelledRides = filtered.filter((r) => r.status === 'cancelled').length;
+      const pendingRides = filtered.filter((r) => r.status === 'upcoming' || r.status === 'active' || r.status === 'scheduled').length;
+      const totalDistanceKm = filtered.reduce((acc, r) => acc + (Number(r.distanceKm) || 14.8), 0);
+      const avgDistanceKm = totalRides > 0 ? Math.round((totalDistanceKm / totalRides) * 10) / 10 : 0;
+      const passengerRides = filtered.filter((r) => r.type === 'passenger');
+      const driverRides = filtered.filter((r) => r.type === 'driver');
+      const totalSpent = passengerRides.reduce((acc, r) => acc + (Number(r.fare) || 0), 0);
+      const totalEarned = driverRides.reduce((acc, r) => acc + (Number(r.fare) || 0), 0);
+      const averageFare = totalRides > 0 ? Math.round(filtered.reduce((acc, r) => acc + (Number(r.fare) || 0), 0) / totalRides) : 0;
+      const averageRating = user.rating || 4.9;
+      const co2SavedKg = Math.round(totalDistanceKm * 0.12 * 10) / 10;
+
+      return {
+        totalRides,
+        completedRides,
+        cancelledRides,
+        pendingRides,
+        totalDistanceKm: Math.round(totalDistanceKm * 10) / 10,
+        totalSpent,
+        totalEarned,
+        averageFare,
+        averageRating,
+        avgDistanceKm,
+        co2SavedKg,
+      };
+    },
     getTheme() {
       return localStorage.getItem('carpool_theme') || 'dark';
     },

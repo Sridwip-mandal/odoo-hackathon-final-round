@@ -41,7 +41,6 @@ export const Navbar: React.FC<NavbarProps> = ({ currentUser, onRoleSwitch, onUse
 
   const navLinks = [
     { to: '/dashboard', label: 'Dashboard' },
-    { to: '/my-trips', label: 'My Trips' },
     { to: '/ride-history', label: 'Ride History' },
     { to: '/my-vehicle', label: 'My Vehicle' },
     { to: '/wallet', label: 'Wallet' },
